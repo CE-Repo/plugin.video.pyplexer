@@ -1,0 +1,210 @@
+# PyPlexer
+
+Browse and play the video, music and photo libraries managed by your Plex Media
+Server from inside Kodi.
+
+> PyPlexer is **not** an official Plex add-on. It is not supported or endorsed
+> by Plex.
+
+- [Requirements](#requirements)
+- [First run](#first-run)
+- [What you get](#what-you-get)
+- [Context menus](#context-menus)
+- [Settings](#settings)
+- [Adding Plex media to the Kodi library](#adding-plex-media-to-the-kodi-library)
+- [Plex Companion](#plex-companion)
+- [Up Next](#up-next)
+- [TraktToKodi](#trakttokodi)
+
+## Requirements
+
+| | |
+| --- | --- |
+| Kodi | 21 (Omega) or newer |
+| Server | Plex Media Server, reachable over the network |
+| Account | Optional — a myPlex account is only needed for shared libraries, Plex Home users and access from outside your network |
+
+PyPlexer pulls in `script.module.requests`, `script.module.pyxbmct` and
+`script.module.infotagger`; Kodi installs them for you.
+
+## First run
+
+In most cases there is nothing to configure. PyPlexer discovers servers on the
+local network over GDM and lists their libraries straight away.
+
+If your server is not found:
+
+1. Open *Settings → Server*
+2. Set **Server Discovery** to `Manual`
+3. Fill in **Primary Server Address** and **Port Number** (default `32400`)
+
+To reach libraries shared with you, switch Plex Home users, or connect from
+outside your network, sign in through *Settings → Server → Manage myPlex*. You
+can sign in with your credentials or with a PIN shown on screen.
+
+With several servers available, *Settings → Server → Select master server...*
+picks the one used for myPlex Queue.
+
+## What you get
+
+**Libraries** — Movies, TV shows, music and photos, presented through the Plex
+section views you already know: All, Unwatched, Continue Watching, On Deck,
+Recently Added, Recently Released, Recently Viewed, By Collection, By Genre, By
+Year, By Decade, By Director, By Starring Actor, By Country, By Content Rating,
+By Rating, By Resolution, By First Letter, By Folder, and per-section search.
+
+**Multiple servers** — Every discovered and shared server appears on the main
+menu. *Combined Sections* merges the same content type across all of them into
+one listing, and the all-servers rows (Recently Added, On Deck, search) span
+every server at once.
+
+**Main menu entries.** Everything below the library sections can be hidden in
+*Settings → Look and Feel*, and several entries only appear once you are signed
+in to myPlex.
+
+| Entry | What it does | Shown when |
+| --- | --- | --- |
+| Combined Sections | One listing per content type, merged across servers | At least one section is listed |
+| Playlists | Playlists stored on a server | Signed in to myPlex |
+| PyPlexer Playlist | Builds a playlist from criteria you pick | Signed in to myPlex |
+| myPlex Queue | Your myPlex watch later queue | Signed in to myPlex |
+| Channels | Plex channels installed on a server | Always |
+| Plex Online | Browse and install Plex channels | Always |
+| Widgets | Paths intended for skin home-screen widgets | Always |
+| Switch User | Change Plex Home user | Plex Home is enabled |
+| Sign In / Sign Out | myPlex account | Always |
+| Detect Servers | Re-runs discovery | Always |
+| Manage Servers | Status, master server, certificate verification, custom access urls | Always |
+| Clear Caches | Drops everything PyPlexer has cached | Caching is enabled |
+
+Channels, Plex Online, Widgets and Playlists are per-server entries. By default
+they only carry the server's name when more than one server is present; set
+**Server name prefix on the main menu** to `Always` to label them regardless.
+
+**Playback** — Direct play from local, SMB or AFP paths when the file is
+reachable, falling back to streaming from the server. Watched state and
+progress are reported back to Plex as you watch, so a resume point set in Kodi
+is there on your phone.
+
+**Transcoding** — One always-on profile plus two optional ones, each with its
+own quality, subtitle size and audio boost. When more than one profile is
+enabled PyPlexer asks which to use. Transcoding can also be triggered
+automatically for HEVC, for anything above 1080p, or for anything above 8-bit.
+
+**Extras** — Skip-intro prompt driven by Plex's intro markers, song lyrics via
+Plex's LyricFind integration, Up Next support for automatic next-episode
+playback, a Plex Companion receiver so Plex apps can control Kodi, and Wake On
+LAN for up to eleven servers.
+
+## Context menus
+
+**Inside PyPlexer listings** — Refresh, Go to (jumps to the parent season or
+show), Add to playlist, Delete from playlist, Delete playlist, Mark as watched /
+unwatched, Subtitles, Audio, Update library, and Delete. Delete is hidden unless
+**Show the 'Delete' context menu** is enabled, and the whole set can be
+suppressed with **Skip Context Menus** — both in *Settings → Look and Feel*.
+
+**On library and widget items** — When Plex media has been scraped into the
+Kodi library, a *PyPlexer* submenu adds *Play Transcoded*, *Mark as watched*
+and *Mark as unwatched*, so watched state set in Kodi reaches the server.
+
+## Settings
+
+| Category | Covers |
+| --- | --- |
+| Server | Discovery, manual address, HTTPS, myPlex, master server, Wake On LAN |
+| Playback | Stream source, audio/subtitle selection, DVD, SMB overrides, intro skipping, lyrics, transcoding |
+| Look and Feel | Menus shown, season flattening, episode sorting, server name prefixes, Recently Added counts, context menus |
+| Kodi Library | Which sections are exported to the Kodi library |
+| Up Next | Up Next integration and its notification encoding |
+| Companion Receiver | The Plex Companion listener and Kodi's web server credentials |
+| Advanced | Playback monitor, artwork resolution, metadata and media flag skipping |
+| Cache | Server and data cache toggles and TTLs, plus Clear Caches |
+| Debug | Log level, log redaction, skip-intro dialog preview |
+
+A few worth knowing about:
+
+- **Stream from PMS** (*Playback*) — `Auto` plays the file directly when Kodi
+  can reach the path and streams otherwise. Force streaming with `http`, or
+  point PyPlexer at your own share with `smb` / `AFP`.
+- **Audio and subtitle selector** (*Playback*) — `Plex Control` applies the
+  track selection made in Plex; `Kodi Control` leaves Kodi's own preferences
+  alone; `Never show subtitles` forces them off.
+- **Flatten TV Shows** (*Look and Feel*) — `Off`, `If only one season`, or
+  `All seasons`.
+- **Episode sort method** (*Look and Feel*) — `Kodi` sorts by season and
+  episode, `Plex` keeps the order the server sends.
+- **Server name prefix on the main menu** (*Look and Feel*) — `Default` adds the
+  server name only when more than one server is present, `Always` adds it even
+  with a single server.
+- **Data Cache TTL** (*Cache*) — how long listings are reused before PyPlexer
+  asks the server again. Lower it if changes made in Plex take too long to
+  appear.
+
+## Adding Plex media to the Kodi library
+
+PyPlexer can feed the Kodi video library so Plex content sits alongside your
+local media and is visible to skins and other add-ons. Scraped items lose most
+Plex-specific behaviour, so PyPlexer's own listings remain the richer way to
+browse.
+
+Add a video source pointing at one of these paths:
+
+**Movies** — `plugin://plugin.video.pyplexer/library/movies/`
+
+- Choose information provider: *Local information only*
+- Movies are in separate folders that match the movie title: **disabled**
+- Scan recursively: **disabled**
+
+**TV Shows** — `plugin://plugin.video.pyplexer/library/tvshows/`
+
+- Choose information provider: *Local information only*
+- Selected folder contains a single TV show: **disabled**
+
+Follow the [Adding video sources](https://kodi.wiki/view/Adding_video_sources)
+wiki page, using the `plugin://` path above in place of steps 4–5 and choosing
+*Local information only* at step 9.
+
+Choose which sections are exported with *Settings → Kodi Library → Select
+sections to include in library scans*; *Reset selected sections* clears the
+choice.
+
+## Plex Companion
+
+The companion receiver lets Plex apps on your phone, tablet or desktop see Kodi
+as a playback target and control it.
+
+> Marked **experimental** in the settings. Changes to these settings need a Kodi
+> restart to take effect.
+
+1. Enable Kodi's web server: *Settings → Services → Control → Allow remote
+   control via HTTP*
+2. In *Settings → Companion Receiver*, set **Enabled**
+3. Enter the same **Username**, **Password** and web server **Port** you set in
+   step 1
+4. Optionally change the **Device Name** (default `Kodi-PyPlexer`) and the
+   listener **Port** (default `3005`)
+5. Restart Kodi
+
+Kodi then appears as a player in your Plex apps while the service is running.
+
+## Up Next
+
+With [Up Next](https://kodi.wiki/view/Add-on:UpNext) installed, PyPlexer offers
+the next episode as one finishes.
+
+Enable it in *Settings → Up Next*. If Up Next is not installed the settings
+screen offers to install it; if it is installed but disabled, PyPlexer offers
+to enable it. **Notification encoding** (`hex` or `base64`) only needs changing
+if episode data does not reach Up Next.
+
+## TraktToKodi
+
+PyPlexer pairs with the TraktToKodi browser extension to play a title from
+Trakt.tv straight on your Kodi box. Set the `Add-on ID` in your TraktToKodi
+profile to `plugin.video.pyplexer`.
+
+- **Chrome:** [Chrome Web Store](https://chrome.google.com/webstore/detail/trakttokodi/jongfgkokmlpdekeljpegeldjofbageo)
+  · [source](https://github.com/anxdpanic/TraktToKodi-Extension/tree/chrome)
+- **Firefox:** [AMO Gallery](https://addons.mozilla.org/en-US/firefox/addon/trakttokodi/)
+  · [source](https://github.com/anxdpanic/TraktToKodi-Extension/tree/firefox)
