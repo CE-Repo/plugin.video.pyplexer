@@ -175,7 +175,9 @@ def _refine_movies(context, results):
         LOG.debug('No item matches %s (%s), the caller gets nothing rather than '
                   'the wrong film' % (wanted, year))
 
-    return _deduplicate(matches)
+    # every copy of the right film is kept - a Full HD and a 4K item are two
+    # things to choose from, not a duplicate
+    return matches
 
 
 def _search_episode(context, wanted):
@@ -216,7 +218,7 @@ def _search_episode(context, wanted):
                             _as_int(video.get('index')) == episode):
                         results.append((server.get_uuid(), leaves, video))
 
-    return _deduplicate(results)
+    return results
 
 
 def _wanted_titles(params):
@@ -229,7 +231,12 @@ def _wanted_titles(params):
 
 def _sort_results(context, results):
     """Newest first, with the closest match on top: what the caller asked for
-    should not sit below a namesake from twenty years ago."""
+    should not sit below a namesake from twenty years ago.  Copies of one film
+    are kept together with the best quality first."""
+    # sorting twice, the second pass is stable and keeps the quality order
+    # inside a group of copies
+    results = sorted(results, key=_best_media_score, reverse=True)
+
     if context.params.get('video_type') == 'episode':
         return sorted(results, key=_episode_order)
 
@@ -267,32 +274,10 @@ def _episode_order(entry):
     )
 
 
-def _deduplicate(results):
-    """One entry per title: the same film on two servers, or in a 4K library
-    next to a Full HD one, is the same choice for the caller - offer the best
-    copy and let the playback quality search present the rest."""
-    best = {}
-    order = []
-
-    for entry in results:
-        element = entry[2]
-        key = element.get('guid') or '%s|%s|%s|%s' % (normalise_title(element.get('title')),
-                                                      element.get('year'),
-                                                      element.get('parentIndex'),
-                                                      element.get('index'))
-
-        if key not in best:
-            best[key] = entry
-            order.append(key)
-            continue
-
-        if _best_media_score(element) > _best_media_score(best[key][2]):
-            best[key] = entry
-
-    return [best[key] for key in order]
-
-
-def _best_media_score(element):
+def _best_media_score(entry):
+    """Quality of the best version an item holds, used to put the 4K copy of a
+    film above its Full HD copy."""
+    element = entry[2]
     scores = [quality_score(media_details(media)) for media in element.iter('Media')]
     return max(scores) if scores else ()
 

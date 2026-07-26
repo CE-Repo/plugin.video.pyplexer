@@ -226,9 +226,8 @@ the library title, the original title and the sort title - and its year fits.
 A film of the same name from another year is a different film and is left out,
 even when that means nothing is returned; only when no item carries the
 requested year is a difference of one year accepted, because regions release a
-film a year apart. A film held in several libraries is returned once, as its
-best copy, and the other copies show up in the *Better quality* dialog at
-playback.
+film a year apart. Every copy of the right film is returned - a Full HD and a
+4K item are two things to choose from - with the better quality first.
 
 Without a year the search stays as broad as it always was - the add-on's own
 search needs that - and only the order changes: exact title matches first, then
