@@ -142,6 +142,7 @@ A few worth knowing about:
   alone; `Never show subtitles` forces them off.
 - **Search for a better quality before playback** (*Playback*) — compares the
   versions of the title and asks which one to play when a better one exists.
+  Closing that dialog with Back or the X cancels playback.
   *Include other servers in the search* also asks the other servers of your
   account, and *Maximum search time* caps how long that may take. *Always show
   the version dialog* asks whenever more than one version exists, even when

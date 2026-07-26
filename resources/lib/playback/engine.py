@@ -22,6 +22,7 @@ from gui.builders.common import get_banner_image
 from gui.builders.common import get_fanart_image
 from gui.builders.common import get_thumb_image
 from gui.builders.track import create_track_item
+from playback.quality import CANCELLED
 from playback.quality import QualitySearch
 from playback.quality import describe
 from playback.quality import media_details
@@ -157,9 +158,9 @@ def play_library_media(context, data):
 def switch_to_better_quality(context, server, stream, data, media_id, up_next):  # pylint: disable=too-many-positional-arguments
     """Look for a better version of this title before playback starts.
 
-    A local pick is handed back through data['media_index']; when the user
-    picks a version that lives on another server, playback is restarted for
-    that item and True is returned so the caller stops here.
+    A local pick is handed back through data['media_index'].  True means the
+    caller has to stop: either playback was restarted for a copy held as its
+    own item, or the viewer dismissed the dialog and nothing should play.
     """
     if stream['type'] != 'video' or data.get('quality_checked'):
         return False
@@ -172,6 +173,11 @@ def switch_to_better_quality(context, server, stream, data, media_id, up_next): 
     except Exception as error:  # pylint: disable=broad-except
         LOG.debug('Search for a better quality failed: %s' % error)
         return False
+
+    if choice is CANCELLED:
+        LOG.debug('Version dialog dismissed, playback is not started')
+        xbmcplugin.setResolvedUrl(get_handle(), False, xbmcgui.ListItem())
+        return True
 
     if not choice:
         return False

@@ -28,6 +28,10 @@ from core.strings import i18n_or
 
 LOG = Logger('quality')
 
+#: Returned by QualitySearch.run() when the dialog was dismissed - the viewer
+#: asked for a choice and took none, so nothing is played.
+CANCELLED = object()
+
 MAX_SERVERS = 8  # servers queried in parallel
 MAX_VERSIONS = 12  # versions collected per server
 MAX_SHOWS = 2  # shows opened per server when matching an episode by title
@@ -348,7 +352,8 @@ class QualitySearch:
         self.media_id = media_id
 
     def run(self):
-        """Returns the selected version, or None to play the default one."""
+        """Returns the selected version, None to play the default one, or
+        CANCELLED when the dialog was dismissed and nothing should play."""
         versions = self._local_versions()
         if not versions:
             return None
@@ -642,11 +647,9 @@ class QualitySearch:
 
         selected = xbmcgui.Dialog().select(heading, items, useDetails=True, preselect=0)
 
-        # the current version is returned rather than None when the dialog is
-        # dismissed, so MediaSelect does not ask about the same versions again
         if selected < 0:
-            LOG.debug('Version selection cancelled, keeping the current version')
-            return current
+            LOG.debug('Version selection cancelled, nothing will be played')
+            return CANCELLED
 
         chosen = candidates[selected]
         LOG.debug('Selected version: %s on %s' %
