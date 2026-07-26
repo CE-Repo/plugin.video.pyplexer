@@ -87,9 +87,14 @@ progress are reported back to Plex as you watch, so a resume point set in Kodi
 is there on your phone.
 
 **Better quality** — Before playback starts PyPlexer checks the other versions
-of the title, both on the item itself and on the other servers of your account,
-and offers the better ones in a dialog. The search runs in parallel with a time
-limit, and the dialog only appears when the gain is actually visible.
+of the title and offers the better ones in a dialog. It looks at the versions
+of the item itself, at copies held as their own item elsewhere on the same
+server - a *Movies 4K* library next to *Movies* - and, if you let it, at the
+other servers of your account. Movies are matched by their Plex guid and, for
+libraries scanned with different agents, by title and year; episodes by their
+guid and otherwise through their show, season and episode number. The search
+runs in parallel with a time limit, and the dialog only appears when the gain
+is actually visible.
 
 **Transcoding** — One always-on profile plus two optional ones, each with its
 own quality, subtitle size and audio boost. When more than one profile is

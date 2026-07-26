@@ -2,11 +2,16 @@
 
 """Looks for a better version of the item that is about to be played.
 
-Plex can hold several versions of the same title, either as multiple Media
-elements on one item or as a copy on another server that is shared with the
-account.  Before playback starts the servers are asked - in parallel and with a
-hard time limit - whether they hold the same title, and anything that beats the
-version Kodi would have played is offered in a selection dialog.
+Plex can hold several versions of the same title: as multiple Media elements on
+one item, as its own item in another library on the same server (a 4K library
+next to a Full HD one), or as a copy on another server of the account.  Before
+playback starts the servers are asked - in parallel and with a hard time limit -
+whether they hold the same title, and anything that beats the version Kodi would
+have played is offered in a selection dialog.
+
+Movies are matched by their Plex guid, falling back to title and year because
+libraries scanned with different agents do not share a guid.  Episodes are
+matched by guid as well, falling back to their show, season and episode number.
 """
 
 import re
@@ -25,6 +30,7 @@ LOG = Logger('quality')
 
 MAX_SERVERS = 8  # servers queried in parallel
 MAX_VERSIONS = 12  # versions collected per server
+MAX_SHOWS = 2  # shows opened per server when matching an episode by title
 MIN_BITRATE_GAIN = 1.15  # 15% more bitrate before a version counts as better
 MIN_BITRATE_DELTA = 1.0  # ... and at least 1 Mbps more
 
@@ -239,7 +245,7 @@ class QualitySearch:
         """The current server is always asked for further copies of the title -
         a 4K library sitting next to a Full HD one is the common case - the
         other servers of the account only when the setting allows it."""
-        if not (self._guid() or self._title()):
+        if not (self._guid() or self._title() or self._show()):
             return []
 
         servers = [self.server]
@@ -255,7 +261,7 @@ class QualitySearch:
         return self.stream.get('extra', {}).get('guid')
 
     def _title(self):
-        """Only movies are matched by title; episodes are far too ambiguous."""
+        """Movie title; episodes are matched through their show instead."""
         full_data = self.stream.get('full_data', {})
         if full_data.get('mediatype') != 'movie':
             return None
@@ -266,6 +272,24 @@ class QualitySearch:
             return int(self.stream.get('full_data', {}).get('year') or 0)
         except (TypeError, ValueError):
             return 0
+
+    def _show(self):
+        """Show title, season and episode number of the playing episode."""
+        full_data = self.stream.get('full_data', {})
+        if full_data.get('mediatype') != 'episode':
+            return None
+
+        title = full_data.get('tvshowtitle')
+        if not title:
+            return None
+
+        try:
+            season = int(full_data.get('season'))
+            episode = int(full_data.get('episode'))
+        except (TypeError, ValueError):
+            return None
+
+        return title, season, episode
 
     def _local_versions(self):
         """One entry per <Media> of the item; a Media split over several parts
@@ -297,7 +321,7 @@ class QualitySearch:
             return []
 
         LOG.debug('Searching %s server(s) for other copies of %s / %s' %
-                  (len(servers), self._guid(), self._title()))
+                  (len(servers), self._guid(), self._title() or self._show()))
 
         results = []
         lock = threading.Lock()
@@ -362,14 +386,64 @@ class QualitySearch:
 
     def _by_title(self, server):
         title = self._title()
-        if not title:
-            return []
+        if title:
+            tree = self._search(server, title)
+            if tree is None:
+                return []
+            return self._versions_from(server, self._title_matches(tree))
 
-        tree = self._talk(server, '/search?%s' % urlencode({'query': title, 'limit': 30}))
+        if self._show():
+            return self._by_episode(server)
+
+        return []
+
+    def _search(self, server, query):
+        return self._talk(server, '/search?%s' % urlencode({'query': query, 'limit': 30}))
+
+    def _by_episode(self, server):
+        """Episodes are looked up through their show: find the show by title,
+        then the episode by its season and episode number."""
+        title, season, episode = self._show()
+
+        tree = self._search(server, title)
         if tree is None:
             return []
 
-        return self._versions_from(server, self._title_matches(tree))
+        wanted = normalise_title(title)
+        found = []
+        shows = 0
+
+        for directory in tree.iter('Directory'):
+            if directory.get('type') != 'show':
+                continue
+            if normalise_title(directory.get('title')) != wanted:
+                continue
+
+            rating_key = directory.get('ratingKey')
+            if not rating_key:
+                continue
+
+            shows += 1
+            if shows > MAX_SHOWS:
+                break
+
+            leaves = self._talk(server, '/library/metadata/%s/allLeaves' % rating_key)
+            if leaves is None:
+                continue
+
+            found += self._versions_from(server, self._episode_matches(leaves, season, episode))
+
+        return found
+
+    @staticmethod
+    def _episode_matches(tree, season, episode):
+        for video in tree.iter('Video'):
+            try:
+                if (int(video.get('parentIndex')) == season and
+                        int(video.get('index')) == episode):
+                    yield video
+            except (TypeError, ValueError):
+                continue
 
     def _title_matches(self, tree):
         """Same title, same year, same type - anything looser starts offering
