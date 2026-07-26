@@ -246,10 +246,15 @@ def _sort_results(context, results):
     # inside a group of copies
     results = sorted(results, key=_best_media_score, reverse=True)
 
-    if context.params.get('video_type') == 'episode':
-        return sorted(results, key=_episode_order)
-
     wanted = _wanted_titles(context.params)
+
+    if context.params.get('video_type') == 'episode':
+        show = normalise_title(context.params.get('showtitle'))
+        numbers = (_as_int(context.params.get('season')),
+                   _as_int(context.params.get('episode')))
+        return sorted(results,
+                      key=lambda entry: _episode_order(entry[2], wanted, show, numbers))
+
     year = _as_int(context.params.get('year'))
 
     return sorted(results, key=lambda entry: _movie_order(entry[2], wanted, year))
@@ -273,13 +278,33 @@ def _movie_order(element, wanted, year):
     )
 
 
-def _episode_order(entry):
-    element = entry[2]
+def _episode_order(element, wanted, show, numbers):
+    """Requested show first, then by year, then season and episode."""
+    season, episode = numbers
+    found_show = normalise_title(element.get('grandparentTitle'))
+    found_year = _as_int(element.get('year')) or 0
+    found_season = _as_int(element.get('parentIndex')) or 0
+    found_episode = _as_int(element.get('index')) or 0
+
+    if show:
+        show_rank = 0 if found_show == show else 1
+    elif wanted:
+        show_rank = 0 if _title_matches(element, wanted) else 1
+    else:
+        show_rank = 0
+
+    if season is None or episode is None:
+        wanted_rank = 0
+    else:
+        wanted_rank = 0 if (found_season == season and found_episode == episode) else 1
 
     return (
-        normalise_title(element.get('grandparentTitle')),
-        _as_int(element.get('parentIndex')) or 0,
-        _as_int(element.get('index')) or 0,
+        -found_year,
+        show_rank,
+        wanted_rank,
+        found_show,
+        found_season,
+        found_episode,
     )
 
 
