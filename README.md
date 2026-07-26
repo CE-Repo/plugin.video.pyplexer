@@ -214,7 +214,17 @@ Kodi then appears as a player in your Plex apps while the service is running.
 userdata/addon_data/plugin.video.themoviedb.helper/players/pyplexer.json
 ```
 
-and pick PyPlexer as the player.
+restart Kodi, and pick **PyPlexer** as the player - not *PyPlexer (Search)*,
+which is the manual search and knows nothing about the year. TMDb Helper
+remembers the player chosen for an item, so an item that was played with the
+search entry before keeps using it until the default is cleared.
+
+There is no fallback from the precise lookup to the search: a film the lookup
+does not find is not played, rather than the wrong film being offered.
+
+`PyPlexer.search -> Search: query=... year=... -> exact lookup` in `kodi.log`
+shows what the player handed over. A line saying `plain lookup` means no year
+arrived and the search cannot tell the films of that name apart.
 
 The player hands the title over together with the data it already knows -
 `year` for a film, `showtitle`, `season` and `episode` for an episode - and

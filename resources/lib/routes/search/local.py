@@ -54,8 +54,17 @@ def run(context):
 
     context.params = params
 
+    # one line that says what the caller asked for and what came back, so a
+    # player handing over too little is visible in the log
+    LOG.debug('Search: query=%s title=%s originaltitle=%s year=%s showtitle=%s '
+              'season=%s episode=%s -> %s lookup' %
+              (params.get('query'), params.get('title'), params.get('originaltitle'),
+               params.get('year'), params.get('showtitle'), params.get('season'),
+               params.get('episode'), 'exact' if _is_precise(params) else 'plain'))
+
     succeeded = False
     search_results = search(context)
+    LOG.debug('Search returned %s item(s)' % len(search_results))
     log_results = list(map(lambda x: decode_utf8(ETree.tostring(x[1])), search_results))
     LOG.debug('Found search results: %s' % '\n\n'.join(log_results))
 
