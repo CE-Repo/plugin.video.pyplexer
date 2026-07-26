@@ -95,16 +95,16 @@ def search(context):
     if episode:
         results = _search_episode(context, episode)
         if results:
-            return results
+            return _sort_results(context, results)
 
         LOG.debug('No exact episode match, falling back to the plain search')
 
     results = _search_sections(context)
 
     if context.params.get('video_type') == 'movie':
-        return _refine_movies(context, results)
+        results = _refine_movies(context, results)
 
-    return results
+    return _sort_results(context, results)
 
 
 def _search_sections(context):
@@ -140,10 +140,7 @@ def _refine_movies(context, results):
     """Keep the items that really are the requested film. Plex answers
     'Parasite' with everything holding the word, so an exact title - and the
     year when the caller knows it - is what makes the difference."""
-    # the caller may know the title in another language than the library
-    wanted = {normalise_title(context.params.get('title')),
-              normalise_title(context.params.get('originaltitle'))}
-    wanted.discard('')
+    wanted = _wanted_titles(context.params)
     if not wanted:
         return results
 
@@ -213,6 +210,54 @@ def _search_episode(context, wanted):
                         results.append((server.get_uuid(), leaves, video))
 
     return _deduplicate(results)
+
+
+def _wanted_titles(params):
+    """The caller may know the title in another language than the library."""
+    titles = {normalise_title(params.get('title')),
+              normalise_title(params.get('originaltitle'))}
+    titles.discard('')
+    return titles
+
+
+def _sort_results(context, results):
+    """Newest first, with the closest match on top: what the caller asked for
+    should not sit below a namesake from twenty years ago."""
+    if context.params.get('video_type') == 'episode':
+        return sorted(results, key=_episode_order)
+
+    wanted = _wanted_titles(context.params)
+    year = _as_int(context.params.get('year'))
+
+    return sorted(results, key=lambda entry: _movie_order(entry[2], wanted, year))
+
+
+def _movie_order(element, wanted, year):
+    found = _as_int(element.get('year')) or 0
+
+    if not year:
+        distance = 0  # nothing to compare against, order by year alone
+    elif found:
+        distance = abs(found - year)
+    else:
+        distance = 9999  # an item without a year is no match for one
+
+    return (
+        0 if wanted and _title_matches(element, wanted) else 1,
+        distance,
+        -found,
+        normalise_title(element.get('title')),
+    )
+
+
+def _episode_order(entry):
+    element = entry[2]
+
+    return (
+        normalise_title(element.get('grandparentTitle')),
+        _as_int(element.get('parentIndex')) or 0,
+        _as_int(element.get('index')) or 0,
+    )
 
 
 def _deduplicate(results):
