@@ -317,7 +317,7 @@ def part_index_for_media(details, media_index):
 
 
 def describe(details):
-    """One liner, e.g. '2160p HDR - Dolby TrueHD 7.1 (Atmos) - 30.0 Mb/s - MKV'."""
+    """One liner, e.g. '2160p HDR - Dolby TrueHD 7.1 (Atmos) - 30.0 Mb/s'."""
     parts = []
 
     resolution = details.get('videoResolution')
@@ -333,10 +333,6 @@ def describe(details):
     bitrate = details.get('bitrate')
     if bitrate:
         parts.append('%s Mb/s' % bitrate)
-
-    container = details.get('container')
-    if container and container != 'unknown':
-        parts.append(container.upper())
 
     return ' - '.join(parts) or i18n_or('Unknown', 'Unbekannt')
 
