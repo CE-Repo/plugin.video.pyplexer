@@ -219,13 +219,20 @@ and pick PyPlexer as the player.
 The player hands the title over together with the data it already knows -
 `year` for a film, `showtitle`, `season` and `episode` for an episode - and
 PyPlexer resolves that to a single item instead of returning everything Plex'
-full text search finds for the word. Titles are matched against the library
-title as well as the original title, the release year may differ by a year
-between regions, and a film held in several libraries is offered once, as its
-best copy; the other copies then show up in the *Better quality* dialog.
+full text search finds for the word.
 
-Without those extras the search stays as broad as it was, which is what the
-add-on's own search needs.
+A film only counts as a match when its title matches exactly - checked against
+the library title, the original title and the sort title - and its year fits.
+A film of the same name from another year is a different film and is left out,
+even when that means nothing is returned; only when no item carries the
+requested year is a difference of one year accepted, because regions release a
+film a year apart. A film held in several libraries is returned once, as its
+best copy, and the other copies show up in the *Better quality* dialog at
+playback.
+
+Without a year the search stays as broad as it always was - the add-on's own
+search needs that - and only the order changes: exact title matches first, then
+newest first.
 
 ## Up Next
 

@@ -101,7 +101,9 @@ def search(context):
 
     results = _search_sections(context)
 
-    if context.params.get('video_type') == 'movie':
+    # only a caller that named a year gets the strict treatment; the keyboard
+    # search has to stay broad, it is a search after all
+    if context.params.get('video_type') == 'movie' and _is_precise(context.params):
         results = _refine_movies(context, results)
 
     return _sort_results(context, results)
@@ -137,9 +139,14 @@ def _search_sections(context):
 
 
 def _refine_movies(context, results):
-    """Keep the items that really are the requested film. Plex answers
-    'Parasite' with everything holding the word, so an exact title - and the
-    year when the caller knows it - is what makes the difference."""
+    """Keep the film the caller asked for and nothing else.  Plex answers
+    'Speak No Evil' with every film of that name, so the title has to match
+    exactly and the year has to fit; a film of the same name from another year
+    is a different film and is dropped, even when that leaves nothing.
+
+    The year is only allowed to differ by one, and only when no item carries
+    the requested year, because regions release a film a year apart.
+    """
     wanted = _wanted_titles(context.params)
     if not wanted:
         return results
@@ -165,8 +172,8 @@ def _refine_movies(context, results):
 
     matches = exact or close
     if not matches:
-        LOG.debug('Nothing matched %s (%s) exactly, offering all results' % (wanted, year))
-        return results
+        LOG.debug('No item matches %s (%s), the caller gets nothing rather than '
+                  'the wrong film' % (wanted, year))
 
     return _deduplicate(matches)
 
