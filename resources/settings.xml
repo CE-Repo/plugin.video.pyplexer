@@ -675,6 +675,46 @@
                     </control>
                 </setting>
             </group>
+            <group id="5" label="30823">
+                <setting id="quality_search" type="boolean" label="30824" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="quality_search_servers" type="boolean" label="30825" help="" parent="quality_search">
+                    <level>0</level>
+                    <default>true</default>
+                    <dependencies>
+                        <dependency type="enable">
+                            <condition operator="is" setting="quality_search">true</condition>
+                        </dependency>
+                        <dependency type="visible">
+                            <condition operator="is" setting="quality_search">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="quality_search_timeout" type="integer" label="30826" help="" parent="quality_search">
+                    <level>0</level>
+                    <default>5</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <step>1</step>
+                        <maximum>20</maximum>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="enable">
+                            <condition operator="is" setting="quality_search">true</condition>
+                        </dependency>
+                        <dependency type="visible">
+                            <condition operator="is" setting="quality_search">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                </setting>
+            </group>
         </category>
         <category id="look and feel" label="30520" help="">
             <group id="1">

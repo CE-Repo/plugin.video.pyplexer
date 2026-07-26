@@ -6,45 +6,102 @@
     <controls>
         <control type="group">
             <animation type="WindowOpen" reversible="false">
-                <effect type="fade" start="0" end="100" time="500"/>
+                <effect type="fade" start="0" end="100" time="240" tween="sine" easing="out"/>
+                <effect type="slide" start="0,48" end="0,0" time="320" tween="cubic" easing="out"/>
             </animation>
             <animation type="WindowClose" reversible="false">
-                <effect type="fade" start="100" end="0" time="500"/>
+                <effect type="fade" start="100" end="0" time="200" tween="sine" easing="in"/>
+                <effect type="slide" start="0,0" end="0,48" time="240" tween="cubic" easing="in"/>
             </animation>
+
+            <!-- scrim, keeps the button readable on bright scenes -->
+            <control type="image">
+                <left>0</left>
+                <bottom>0</bottom>
+                <width>1280</width>
+                <height>200</height>
+                <aspectratio>stretch</aspectratio>
+                <texture colordiffuse="99000000">background.png</texture>
+            </control>
+
             <control type="group">
-                <height>64</height>
-                <control type="image">
-                    <width>100%</width>
-                    <height>64</height>
-                    <texture colordiffuse="44000000">background.png</texture>
+                <right>56</right>
+                <bottom>56</bottom>
+                <width>360</width>
+                <height>96</height>
+
+                <!-- accent glow, only while the button holds focus -->
+                <control type="image" id="3003">
+                    <left>-28</left>
+                    <top>-20</top>
+                    <width>416</width>
+                    <height>116</height>
+                    <aspectratio>stretch</aspectratio>
+                    <texture colordiffuse="A6F1B22B">button_glow.png</texture>
+                    <visible>Control.HasFocus(3002)</visible>
+                    <animation effect="fade" start="0" end="100" time="160">Visible</animation>
+                    <animation effect="fade" start="100" end="0" time="160">Hidden</animation>
+                    <animation effect="fade" start="100" end="55" time="1100" pulse="true"
+                               condition="Control.HasFocus(3002)">Conditional</animation>
                 </control>
-                <control type="group">
-                    <top>12</top>
-                    <right>20</right>
-                    <width>70%</width>
-                    <control type="grouplist" id="3001">
-                        <orientation>horizontal</orientation>
-                        <height>40</height>
-                        <itemgap>10</itemgap>
-                        <align>right</align>
-                        <control type="button" id="3002">
-                            <label>$ADDON[plugin.video.pyplexer 30751]</label>
-                            <height>40</height>
-                            <width min="50">auto</width>
-                            <font>font20_title</font>
-                            <textoffsetx>32</textoffsetx>
-                            <textcolor>ddffffff</textcolor>
-                            <focusedcolor>eeffffff</focusedcolor>
-                            <selectedcolor>ddffffff</selectedcolor>
-                            <shadowcolor>22000000</shadowcolor>
-                            <aligny>center</aligny>
-                            <align>center</align>
-                            <texturefocus border="10" colordiffuse="FF063FB2">button.png</texturefocus>
-                            <texturenofocus border="10" colordiffuse="FF323232">button.png</texturenofocus>
-                            <alttexturefocus border="10" colordiffuse="FF063FB2">button.png</alttexturefocus>
-                            <alttexturenofocus border="10" colordiffuse="FF323232">button.png</alttexturenofocus>
-                        </control>
-                    </control>
+
+                <control type="button" id="3002">
+                    <left>0</left>
+                    <top>0</top>
+                    <width>360</width>
+                    <height>76</height>
+                    <label>$ADDON[plugin.video.pyplexer 30751]</label>
+                    <font>font20_title</font>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                    <textoffsetx>80</textoffsetx>
+                    <textcolor>FFF4F5F7</textcolor>
+                    <focusedcolor>FF14161A</focusedcolor>
+                    <disabledcolor>66FFFFFF</disabledcolor>
+                    <shadowcolor>59000000</shadowcolor>
+                    <texturefocus border="14" colordiffuse="FFF1B22B">button_focus.png</texturefocus>
+                    <texturenofocus border="14" colordiffuse="D91B1E24">button.png</texturenofocus>
+                    <animation effect="zoom" start="100" end="103" center="180,38" time="140"
+                               tween="sine" easing="out"
+                               condition="Control.HasFocus(3002)">Conditional</animation>
+                </control>
+
+                <!-- glyph is drawn over the button, matching its text colours -->
+                <control type="image" id="3004">
+                    <left>30</left>
+                    <top>24</top>
+                    <width>28</width>
+                    <height>28</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture colordiffuse="FFF4F5F7">icon_skip.png</texture>
+                    <visible>!Control.HasFocus(3002)</visible>
+                </control>
+                <control type="image" id="3005">
+                    <left>30</left>
+                    <top>24</top>
+                    <width>28</width>
+                    <height>28</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture colordiffuse="FF14161A">icon_skip.png</texture>
+                    <visible>Control.HasFocus(3002)</visible>
+                </control>
+
+                <!-- remaining intro time, width is driven by SkipIntroDialog -->
+                <control type="image" id="3010">
+                    <left>0</left>
+                    <top>86</top>
+                    <width>360</width>
+                    <height>8</height>
+                    <aspectratio>stretch</aspectratio>
+                    <texture border="6,0,6,0" colordiffuse="40FFFFFF">bar.png</texture>
+                </control>
+                <control type="image" id="3011">
+                    <left>0</left>
+                    <top>86</top>
+                    <width>360</width>
+                    <height>8</height>
+                    <aspectratio>stretch</aspectratio>
+                    <texture border="6,0,6,0" colordiffuse="E6F1B22B">bar.png</texture>
                 </control>
             </control>
         </control>

@@ -206,7 +206,9 @@ class PlaybackMonitorThread(threading.Thread):
 
         self._dialog_skip_intro = SkipIntroDialog('skip_intro.xml',
                                                   CONFIG['addon'].getAddonInfo('path'),
-                                                  'default', '720p', intro_end=self._intro_end())
+                                                  'default', '720p',
+                                                  intro_start=self._intro_start(),
+                                                  intro_end=self._intro_end())
 
     def skip_intro(self):
         if (self.settings.intro_skipping() and
@@ -219,6 +221,7 @@ class PlaybackMonitorThread(threading.Thread):
             if self._intro_start() <= self._get_time_ms() < self._intro_end():
                 self._skip_intro_dialog()
                 self._dialog_skip_intro.show()
+                self._dialog_skip_intro.update_progress(self._get_time_ms())
 
             elif self._dialog_skip_intro and self._get_time_ms() >= self._intro_end():
                 self._dialog_skip_intro.close()

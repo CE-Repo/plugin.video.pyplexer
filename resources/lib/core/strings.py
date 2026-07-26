@@ -219,6 +219,14 @@ STRINGS = {
     'Added to Watchlist': 30820,
     'Removed from Watchlist': 30821,
     'Could not update Watchlist': 30822,
+    'Better quality': 30823,
+    'Search for a better quality before playback': 30824,
+    'Include other servers in the search': 30825,
+    'Maximum search time (seconds)': 30826,
+    'Better quality available': 30827,
+    'Searching for a better quality...': 30828,
+    'Current version': 30829,
+    'Other server': 30830,
 }
 
 

@@ -22,6 +22,9 @@ from gui.builders.common import get_banner_image
 from gui.builders.common import get_fanart_image
 from gui.builders.common import get_thumb_image
 from gui.builders.track import create_track_item
+from playback.quality import QualitySearch
+from playback.quality import media_details
+from playback.quality import part_index_for_media
 
 LOG = Logger()
 
@@ -95,7 +98,14 @@ def play_library_media(context, data):
         play_playlist(context, server, stream)
         return
 
-    url = MediaSelect(context, server, stream).media_url
+    if switch_to_better_quality(context, server, stream, data, media_id, up_next):
+        return
+
+    preferred_index = data.get('media_index')
+    if preferred_index is not None:
+        preferred_index = part_index_for_media(stream.get('details'), preferred_index)
+
+    url = MediaSelect(context, server, stream, preferred_index=preferred_index).media_url
 
     if url is None:
         return
@@ -141,6 +151,53 @@ def play_library_media(context, data):
     xbmcplugin.setResolvedUrl(get_handle(), True, list_item)
 
     set_now_playing_properties(server, media_id)
+
+
+def switch_to_better_quality(context, server, stream, data, media_id, up_next):  # pylint: disable=too-many-positional-arguments
+    """Look for a better version of this title before playback starts.
+
+    A local pick is handed back through data['media_index']; when the user
+    picks a version that lives on another server, playback is restarted for
+    that item and True is returned so the caller stops here.
+    """
+    if stream['type'] != 'video' or data.get('quality_checked'):
+        return False
+
+    if not context.settings.quality_search():
+        return False
+
+    try:
+        choice = QualitySearch(context, server, stream, media_id=media_id).run()
+    except Exception as error:  # pylint: disable=broad-except
+        LOG.debug('Search for a better quality failed: %s' % error)
+        return False
+
+    if not choice:
+        return False
+
+    if choice['server_uuid'] == server.get_uuid():
+        data['media_index'] = choice['media_index']
+        return False
+
+    other_server = context.plex_network.get_server_from_uuid(choice['server_uuid'])
+    url = other_server.get_formatted_url('/library/metadata/%s' % choice['media_id'])
+    if not up_next:
+        url += '&upnext=false' if '?' in url else '?upnext=false'
+
+    force = data.get('force')
+    if isinstance(force, bool):
+        force = False
+
+    LOG.debug('Playing the selected version from %s' % other_server.get_name())
+    play_library_media(context, {
+        'url': url,
+        'force': force,
+        'transcode': data.get('transcode', False),
+        'transcode_profile': data.get('transcode_profile'),
+        'media_index': choice['media_index'],
+        'quality_checked': True,
+    })
+    return True
 
 
 def create_playback_item(url, streams, data, details):
@@ -310,6 +367,8 @@ class StreamData:
         if content is not None:
             self.data['type'] = 'video'
             self.data['extra']['path'] = content.get('key')
+            # used to find the same title on the other servers of the account
+            self.data['extra']['guid'] = content.get('guid')
             self._content = content
             return True
 
@@ -487,27 +546,9 @@ class StreamData:
 
         for details in media:
 
-            try:
-                if details.get('videoResolution') == 'sd':
-                    resolution = 'SD'
-                elif int(details.get('videoResolution', 0)) > 1088:
-                    resolution = '4K'
-                elif int(details.get('videoResolution', 0)) >= 1080:
-                    resolution = 'HD 1080'
-                elif int(details.get('videoResolution', 0)) >= 720:
-                    resolution = 'HD 720'
-                else:
-                    resolution = 'SD'
-            except ValueError:
-                resolution = ''
-
-            media_details = {
-                'bitrate': round(float(details.get('bitrate', 0)) / 1000, 1),
-                'bitDepth': details.get('bitDepth', 8),
-                'videoResolution': resolution,
-                'container': details.get('container', 'unknown'),
-                'codec': details.get('videoCodec')
-            }
+            # one shared details dict per Media, so the parts of a version stay
+            # recognisable as belonging together
+            version_details = media_details(details)
 
             parts = details.findall('Part')
 
@@ -516,7 +557,7 @@ class StreamData:
             append_details = self.data['details'].append
             for part in parts:
                 append_parts((part.get('key'), part.get('file')))
-                append_details(media_details)
+                append_details(version_details)
                 self.data['parts_count'] += 1
 
     def _get_audio_and_subtitles(self):
@@ -570,10 +611,11 @@ class StreamData:
 
 
 class MediaSelect:
-    def __init__(self, context, server, data):
+    def __init__(self, context, server, data, preferred_index=None):  # pylint: disable=too-many-positional-arguments
         self.context = context
         self.server = server
         self.data = data
+        self.preferred_index = preferred_index
 
         self.dvd_playback = False
 
@@ -604,6 +646,16 @@ class MediaSelect:
         if not options:
             LOG.debug('No playable media parts found')
             self._media_index = None
+            return
+
+        if self.preferred_index is not None and 0 <= self.preferred_index < len(options):
+            # the version has already been chosen, don't ask a second time
+            LOG.debug('Using preselected media part %s' % self.preferred_index)
+            selected = options[self.preferred_index]
+            if force_dvd and any('.ifo' in (part or '').lower() for part in selected):
+                self.dvd_playback = True
+
+            self._media_index = self.preferred_index
             return
 
         if count > 1:

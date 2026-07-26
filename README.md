@@ -86,6 +86,11 @@ reachable, falling back to streaming from the server. Watched state and
 progress are reported back to Plex as you watch, so a resume point set in Kodi
 is there on your phone.
 
+**Better quality** — Before playback starts PyPlexer checks the other versions
+of the title, both on the item itself and on the other servers of your account,
+and offers the better ones in a dialog. The search runs in parallel with a time
+limit, and the dialog only appears when the gain is actually visible.
+
 **Transcoding** — One always-on profile plus two optional ones, each with its
 own quality, subtitle size and audio boost. When more than one profile is
 enabled PyPlexer asks which to use. Transcoding can also be triggered
@@ -113,7 +118,7 @@ and *Mark as unwatched*, so watched state set in Kodi reaches the server.
 | Category | Covers |
 | --- | --- |
 | Server | Discovery, manual address, HTTPS, myPlex, master server, Wake On LAN |
-| Playback | Stream source, audio/subtitle selection, DVD, SMB overrides, intro skipping, lyrics, transcoding |
+| Playback | Stream source, audio/subtitle selection, DVD, SMB overrides, intro skipping, lyrics, transcoding, better quality search |
 | Look and Feel | Menus shown, season flattening, episode sorting, server name prefixes, Recently Added counts, context menus |
 | Kodi Library | Which sections are exported to the Kodi library |
 | Up Next | Up Next integration and its notification encoding |
@@ -130,6 +135,10 @@ A few worth knowing about:
 - **Audio and subtitle selector** (*Playback*) — `Plex Control` applies the
   track selection made in Plex; `Kodi Control` leaves Kodi's own preferences
   alone; `Never show subtitles` forces them off.
+- **Search for a better quality before playback** (*Playback*) — compares the
+  versions of the title and asks which one to play when a better one exists.
+  *Include other servers in the search* also asks the other servers of your
+  account, and *Maximum search time* caps how long that may take.
 - **Flatten TV Shows** (*Look and Feel*) — `Off`, `If only one season`, or
   `All seasons`.
 - **Episode sort method** (*Look and Feel*) — `Kodi` sorts by season and

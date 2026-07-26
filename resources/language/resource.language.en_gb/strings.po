@@ -1654,3 +1654,35 @@ msgstr ""
 msgctxt "#30822"
 msgid "Could not update Watchlist"
 msgstr ""
+
+msgctxt "#30823"
+msgid "Better quality"
+msgstr ""
+
+msgctxt "#30824"
+msgid "Search for a better quality before playback"
+msgstr ""
+
+msgctxt "#30825"
+msgid "Include other servers in the search"
+msgstr ""
+
+msgctxt "#30826"
+msgid "Maximum search time (seconds)"
+msgstr ""
+
+msgctxt "#30827"
+msgid "Better quality available"
+msgstr ""
+
+msgctxt "#30828"
+msgid "Searching for a better quality..."
+msgstr ""
+
+msgctxt "#30829"
+msgid "Current version"
+msgstr ""
+
+msgctxt "#30830"
+msgid "Other server"
+msgstr ""
