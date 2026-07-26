@@ -1686,3 +1686,7 @@ msgstr ""
 msgctxt "#30830"
 msgid "Other server"
 msgstr ""
+
+msgctxt "#30831"
+msgid "Always show the version dialog"
+msgstr ""

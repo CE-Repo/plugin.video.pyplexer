@@ -227,6 +227,7 @@ STRINGS = {
     'Searching for a better quality...': 30828,
     'Current version': 30829,
     'Other server': 30830,
+    'Always show the version dialog': 30831,
 }
 
 

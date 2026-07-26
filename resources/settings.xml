@@ -694,6 +694,19 @@
                     </dependencies>
                     <control type="toggle"/>
                 </setting>
+                <setting id="quality_search_always_ask" type="boolean" label="30831" help="" parent="quality_search">
+                    <level>0</level>
+                    <default>false</default>
+                    <dependencies>
+                        <dependency type="enable">
+                            <condition operator="is" setting="quality_search">true</condition>
+                        </dependency>
+                        <dependency type="visible">
+                            <condition operator="is" setting="quality_search">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="toggle"/>
+                </setting>
                 <setting id="quality_search_timeout" type="integer" label="30826" help="" parent="quality_search">
                     <level>0</level>
                     <default>5</default>

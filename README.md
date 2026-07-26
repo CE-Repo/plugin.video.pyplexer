@@ -138,7 +138,9 @@ A few worth knowing about:
 - **Search for a better quality before playback** (*Playback*) — compares the
   versions of the title and asks which one to play when a better one exists.
   *Include other servers in the search* also asks the other servers of your
-  account, and *Maximum search time* caps how long that may take.
+  account, and *Maximum search time* caps how long that may take. *Always show
+  the version dialog* asks whenever more than one version exists, even when
+  none of them is better - useful to check that the search is working.
 - **Flatten TV Shows** (*Look and Feel*) — `Off`, `If only one season`, or
   `All seasons`.
 - **Episode sort method** (*Look and Feel*) — `Kodi` sorts by season and

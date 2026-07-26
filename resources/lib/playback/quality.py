@@ -211,6 +211,17 @@ class QualitySearch:
         candidates = versions + remote
         candidates.sort(key=lambda version: quality_score(version['details']), reverse=True)
 
+        for version in candidates:
+            LOG.debug('Version on %s: %s%s' % (version['server_name'],
+                                               describe(version['details']),
+                                               ' (current)' if version is current else ''))
+
+        if self.context.settings.quality_search_always_ask():
+            if len(candidates) < 2:
+                LOG.debug('Only one version exists, nothing to choose from')
+                return None
+            return self._ask(candidates, current)
+
         best = candidates[0]
         if best is current or not is_better(best['details'], current['details']):
             LOG.debug('No better version found, playing the default one')

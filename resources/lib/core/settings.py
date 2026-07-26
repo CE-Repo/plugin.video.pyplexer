@@ -215,6 +215,9 @@ class AddonSettings:  # pylint: disable=too-many-public-methods
     def quality_search_servers(self):
         return self._get_setting('quality_search_servers')
 
+    def quality_search_always_ask(self):
+        return self._get_setting('quality_search_always_ask')
+
     def quality_search_timeout(self):
         try:
             return max(1, int(self._get_setting('quality_search_timeout')))
