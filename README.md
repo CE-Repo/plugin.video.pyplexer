@@ -205,6 +205,28 @@ as a playback target and control it.
 
 Kodi then appears as a player in your Plex apps while the service is running.
 
+## TMDb Helper
+
+`resources/tmdbhelper/pyplexer.json` is a ready made player for
+*The Movie Database Helper*. Copy it to
+
+```
+userdata/addon_data/plugin.video.themoviedb.helper/players/pyplexer.json
+```
+
+and pick PyPlexer as the player.
+
+The player hands the title over together with the data it already knows -
+`year` for a film, `showtitle`, `season` and `episode` for an episode - and
+PyPlexer resolves that to a single item instead of returning everything Plex'
+full text search finds for the word. Titles are matched against the library
+title as well as the original title, the release year may differ by a year
+between regions, and a film held in several libraries is offered once, as its
+best copy; the other copies then show up in the *Better quality* dialog.
+
+Without those extras the search stays as broad as it was, which is what the
+add-on's own search needs.
+
 ## Up Next
 
 With [Up Next](https://kodi.wiki/view/Add-on:UpNext) installed, PyPlexer offers

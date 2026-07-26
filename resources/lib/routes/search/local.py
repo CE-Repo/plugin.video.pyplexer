@@ -1,5 +1,14 @@
 # -*- coding: utf-8 -*-
 
+"""Search across the servers of the account.
+
+Two callers use this: the add-on's own search, which wants everything Plex can
+find, and players such as TMDb Helper, which hand over a title they have
+already identified and expect exactly one item back.  The second kind passes
+``year`` for a movie, or ``showtitle``/``season``/``episode`` for an episode,
+and gets a precise lookup instead of Plex' fuzzy full text search.
+"""
+
 import xml.etree.ElementTree as ETree
 from urllib.parse import quote
 
@@ -13,9 +22,14 @@ from core.strings import decode_utf8
 from core.strings import i18n
 from gui.builders.episode import create_episode_item
 from gui.builders.movie import create_movie_item
+from playback.quality import media_details
+from playback.quality import normalise_title
+from playback.quality import quality_score
 from plex.network import Plex
 
 LOG = Logger()
+
+YEAR_TOLERANCE = 1  # the same film is released a year apart in some regions
 
 
 def run(context):
@@ -28,7 +42,15 @@ def run(context):
 
     if not params.get('query'):
         params['query'] = _get_search_query()
+
+    # keep the term as typed; params['query'] is escaped for the Plex URL
+    params['title'] = params.get('title') or params.get('query', '')
     params['query'] = _quote(params['query'])
+
+    if _is_precise(params):
+        # the caller knows what it wants, so the server name must not end up
+        # in the title where it would spoil the match
+        params['no_server_prefix'] = True
 
     context.params = params
 
@@ -69,6 +91,24 @@ def run(context):
 
 
 def search(context):
+    episode = _episode_wanted(context.params)
+    if episode:
+        results = _search_episode(context, episode)
+        if results:
+            return results
+
+        LOG.debug('No exact episode match, falling back to the plain search')
+
+    results = _search_sections(context)
+
+    if context.params.get('video_type') == 'movie':
+        return _refine_movies(context, results)
+
+    return results
+
+
+def _search_sections(context):
+    """Plex' full text search, one call per matching library section."""
     results = []
 
     content_type = _get_content_type(context.params.get('video_type'))
@@ -96,6 +136,151 @@ def search(context):
     return results
 
 
+def _refine_movies(context, results):
+    """Keep the items that really are the requested film. Plex answers
+    'Parasite' with everything holding the word, so an exact title - and the
+    year when the caller knows it - is what makes the difference."""
+    # the caller may know the title in another language than the library
+    wanted = {normalise_title(context.params.get('title')),
+              normalise_title(context.params.get('originaltitle'))}
+    wanted.discard('')
+    if not wanted:
+        return results
+
+    year = _as_int(context.params.get('year'))
+
+    exact = []
+    close = []
+
+    for entry in results:
+        if not _title_matches(entry[2], wanted):
+            continue
+
+        if not year:
+            exact.append(entry)
+            continue
+
+        found = _as_int(entry[2].get('year'))
+        if found == year:
+            exact.append(entry)
+        elif found and abs(found - year) <= YEAR_TOLERANCE:
+            close.append(entry)
+
+    matches = exact or close
+    if not matches:
+        LOG.debug('Nothing matched %s (%s) exactly, offering all results' % (wanted, year))
+        return results
+
+    return _deduplicate(matches)
+
+
+def _search_episode(context, wanted):
+    """Find the show by title, then the episode by its numbers - episode titles
+    differ too much between libraries to search for them."""
+    show, season, episode = wanted
+    query = _quote(show)
+    normalised = normalise_title(show)
+
+    results = []
+
+    for server in context.plex_network.get_server_list():
+        for section in server.get_sections():
+            if section.get_type() != 'show':
+                continue
+
+            found = server.processed_xml('%s/search?type=2&query=%s' %
+                                         (section.get_path(), query))
+            if not _is_not_none(found):
+                continue
+
+            for directory in found.iter('Directory'):
+                if directory.get('type') != 'show':
+                    continue
+                if not _title_matches(directory, normalised):
+                    continue
+
+                rating_key = directory.get('ratingKey')
+                if not rating_key:
+                    continue
+
+                leaves = server.processed_xml('/library/metadata/%s/allLeaves' % rating_key)
+                if not _is_not_none(leaves):
+                    continue
+
+                for video in leaves.iter('Video'):
+                    if (_as_int(video.get('parentIndex')) == season and
+                            _as_int(video.get('index')) == episode):
+                        results.append((server.get_uuid(), leaves, video))
+
+    return _deduplicate(results)
+
+
+def _deduplicate(results):
+    """One entry per title: the same film on two servers, or in a 4K library
+    next to a Full HD one, is the same choice for the caller - offer the best
+    copy and let the playback quality search present the rest."""
+    best = {}
+    order = []
+
+    for entry in results:
+        element = entry[2]
+        key = element.get('guid') or '%s|%s|%s|%s' % (normalise_title(element.get('title')),
+                                                      element.get('year'),
+                                                      element.get('parentIndex'),
+                                                      element.get('index'))
+
+        if key not in best:
+            best[key] = entry
+            order.append(key)
+            continue
+
+        if _best_media_score(element) > _best_media_score(best[key][2]):
+            best[key] = entry
+
+    return [best[key] for key in order]
+
+
+def _best_media_score(element):
+    scores = [quality_score(media_details(media)) for media in element.iter('Media')]
+    return max(scores) if scores else ()
+
+
+def _title_matches(element, wanted):
+    """Libraries hold the localised title, callers may know the original one,
+    so either side is allowed to carry several spellings."""
+    if isinstance(wanted, str):
+        wanted = {wanted}
+
+    candidates = (element.get('title'), element.get('originalTitle'),
+                  element.get('titleSort'))
+    return any(normalise_title(candidate) in wanted for candidate in candidates if candidate)
+
+
+def _episode_wanted(params):
+    if params.get('video_type') != 'episode':
+        return None
+
+    show = params.get('showtitle')
+    season = _as_int(params.get('season'))
+    episode = _as_int(params.get('episode'))
+
+    if not show or season is None or episode is None:
+        return None
+
+    return show, season, episode
+
+
+def _is_precise(params):
+    return bool(params.get('year') or _episode_wanted(params))
+
+
+def _as_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _get_search_query():
     text = ''
     keyboard = xbmc.Keyboard('', i18n('Search...'))
@@ -110,11 +295,9 @@ def _get_search_query():
 
 
 def _quote(query):
-    if ' ' in query:
-        if '%20' in query:
-            query = query.replace('%20', ' ')
-        return quote(query)
-    return query
+    if '%20' in query:
+        query = query.replace('%20', ' ')
+    return quote(query)
 
 
 def _is_not_none(item):

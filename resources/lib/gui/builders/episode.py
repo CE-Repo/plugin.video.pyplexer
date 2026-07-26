@@ -55,7 +55,8 @@ def create_episode_item(context, item, library=False):
                      context.params.get('mode') == '0')
 
     prefix_server = (context.params.get('mode') in COMBINED_SECTIONS and
-                     context.settings.prefix_server_in_combined())
+                     context.settings.prefix_server_in_combined() and
+                     not context.params.get('no_server_prefix'))
 
     if not library:
         if prefix_sxee:
