@@ -175,10 +175,14 @@ def switch_to_better_quality(context, server, stream, data, media_id, up_next): 
     if not choice:
         return False
 
-    if choice['server_uuid'] == server.get_uuid():
+    if (choice['server_uuid'] == server.get_uuid() and
+            str(choice['media_id']) == str(media_id)):
+        # another version of the very same item, MediaSelect can play it
         data['media_index'] = choice['media_index']
         return False
 
+    # a copy held as its own item, either in another library here or on
+    # another server; playback restarts for that item
     other_server = context.plex_network.get_server_from_uuid(choice['server_uuid'])
     url = other_server.get_formatted_url('/library/metadata/%s' % choice['media_id'])
     if not up_next:

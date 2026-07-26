@@ -1685,6 +1685,10 @@ msgctxt "#30831"
 msgid "Always show the version dialog"
 msgstr "Versionsdialog immer anzeigen"
 
+msgctxt "#30832"
+msgid "Other library"
+msgstr "Andere Bibliothek"
+
 #~ msgctxt "#30689"
 #~ msgid "Up Next requires Kodi 18 or higher"
 #~ msgstr "‚Up Next‘ benötigt Kodi 18 oder höher"

@@ -228,6 +228,7 @@ STRINGS = {
     'Current version': 30829,
     'Other server': 30830,
     'Always show the version dialog': 30831,
+    'Other library': 30832,
 }
 
 
