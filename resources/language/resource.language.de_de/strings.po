@@ -1649,6 +1649,46 @@ msgctxt "#30822"
 msgid "Could not update Watchlist"
 msgstr "Merkliste konnte nicht aktualisiert werden"
 
+msgctxt "#30823"
+msgid "Better quality"
+msgstr "Bessere Qualität"
+
+msgctxt "#30824"
+msgid "Search for a better quality before playback"
+msgstr "Vor der Wiedergabe nach besserer Qualität suchen"
+
+msgctxt "#30825"
+msgid "Include other servers in the search"
+msgstr "Andere Server in die Suche einbeziehen"
+
+msgctxt "#30826"
+msgid "Maximum search time (seconds)"
+msgstr "Maximale Suchdauer (Sekunden)"
+
+msgctxt "#30827"
+msgid "Better quality available"
+msgstr "Bessere Qualität verfügbar"
+
+msgctxt "#30828"
+msgid "Searching for a better quality..."
+msgstr "Suche nach besserer Qualität ..."
+
+msgctxt "#30829"
+msgid "Current version"
+msgstr "Aktuelle Version"
+
+msgctxt "#30830"
+msgid "Other server"
+msgstr "Anderer Server"
+
+msgctxt "#30831"
+msgid "Always show the version dialog"
+msgstr "Versionsdialog immer anzeigen"
+
+msgctxt "#30832"
+msgid "Other library"
+msgstr "Andere Bibliothek"
+
 #~ msgctxt "#30689"
 #~ msgid "Up Next requires Kodi 18 or higher"
 #~ msgstr "‚Up Next‘ benötigt Kodi 18 oder höher"

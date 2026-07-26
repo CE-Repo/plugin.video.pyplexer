@@ -86,6 +86,16 @@ reachable, falling back to streaming from the server. Watched state and
 progress are reported back to Plex as you watch, so a resume point set in Kodi
 is there on your phone.
 
+**Better quality** — Before playback starts PyPlexer checks the other versions
+of the title and offers the better ones in a dialog. It looks at the versions
+of the item itself, at copies held as their own item elsewhere on the same
+server - a *Movies 4K* library next to *Movies* - and, if you let it, at the
+other servers of your account. Movies are matched by their Plex guid and, for
+libraries scanned with different agents, by title and year; episodes by their
+guid and otherwise through their show, season and episode number. The search
+runs in parallel with a time limit, and the dialog only appears when the gain
+is actually visible.
+
 **Transcoding** — One always-on profile plus two optional ones, each with its
 own quality, subtitle size and audio boost. When more than one profile is
 enabled PyPlexer asks which to use. Transcoding can also be triggered
@@ -113,7 +123,7 @@ and *Mark as unwatched*, so watched state set in Kodi reaches the server.
 | Category | Covers |
 | --- | --- |
 | Server | Discovery, manual address, HTTPS, myPlex, master server, Wake On LAN |
-| Playback | Stream source, audio/subtitle selection, DVD, SMB overrides, intro skipping, lyrics, transcoding |
+| Playback | Stream source, audio/subtitle selection, DVD, SMB overrides, intro skipping, lyrics, transcoding, better quality search |
 | Look and Feel | Menus shown, season flattening, episode sorting, server name prefixes, Recently Added counts, context menus |
 | Kodi Library | Which sections are exported to the Kodi library |
 | Up Next | Up Next integration and its notification encoding |
@@ -130,6 +140,13 @@ A few worth knowing about:
 - **Audio and subtitle selector** (*Playback*) — `Plex Control` applies the
   track selection made in Plex; `Kodi Control` leaves Kodi's own preferences
   alone; `Never show subtitles` forces them off.
+- **Search for a better quality before playback** (*Playback*) — compares the
+  versions of the title and asks which one to play when a better one exists.
+  Closing that dialog with Back or the X cancels playback.
+  *Include other servers in the search* also asks the other servers of your
+  account, and *Maximum search time* caps how long that may take. *Always show
+  the version dialog* asks whenever more than one version exists, even when
+  none of them is better - useful to check that the search is working.
 - **Flatten TV Shows** (*Look and Feel*) — `Off`, `If only one season`, or
   `All seasons`.
 - **Episode sort method** (*Look and Feel*) — `Kodi` sorts by season and
@@ -187,6 +204,44 @@ as a playback target and control it.
 5. Restart Kodi
 
 Kodi then appears as a player in your Plex apps while the service is running.
+
+## TMDb Helper
+
+`resources/tmdbhelper/pyplexer.json` is a ready made player for
+*The Movie Database Helper*. Copy it to
+
+```
+userdata/addon_data/plugin.video.themoviedb.helper/players/pyplexer.json
+```
+
+restart Kodi, and pick **PyPlexer** as the player - not *PyPlexer (Search)*,
+which is the manual search and knows nothing about the year. TMDb Helper
+remembers the player chosen for an item, so an item that was played with the
+search entry before keeps using it until the default is cleared.
+
+There is no fallback from the precise lookup to the search: a film the lookup
+does not find is not played, rather than the wrong film being offered.
+
+`PyPlexer.search -> Search: query=... year=... -> exact lookup` in `kodi.log`
+shows what the player handed over. A line saying `plain lookup` means no year
+arrived and the search cannot tell the films of that name apart.
+
+The player hands the title over together with the data it already knows -
+`year` for a film, `showtitle`, `season` and `episode` for an episode - and
+PyPlexer resolves that to a single item instead of returning everything Plex'
+full text search finds for the word.
+
+A film only counts as a match when its title matches exactly - checked against
+the library title, the original title and the sort title - and its year fits.
+A film of the same name from another year is a different film and is left out,
+even when that means nothing is returned; only when no item carries the
+requested year is a difference of one year accepted, because regions release a
+film a year apart. Every copy of the right film is returned - a Full HD and a
+4K item are two things to choose from - with the better quality first.
+
+Without a year the search stays as broad as it always was - the add-on's own
+search needs that - and only the order changes: exact title matches first, then
+newest first.
 
 ## Up Next
 

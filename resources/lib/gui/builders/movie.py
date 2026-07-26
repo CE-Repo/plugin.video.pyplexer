@@ -53,7 +53,8 @@ def create_movie_item(context, item, library=False):
     }
 
     prefix_server = (context.params.get('mode') in COMBINED_SECTIONS and
-                     context.settings.prefix_server_in_combined())
+                     context.settings.prefix_server_in_combined() and
+                     not context.params.get('no_server_prefix'))
 
     if prefix_server:
         info_labels['title'] = '%s: %s' % (item.server.get_name(), info_labels['title'])

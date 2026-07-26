@@ -3,5 +3,6 @@
 __all__ = [
     'engine',
     'player',
+    'quality',
     'up_next',
 ]
