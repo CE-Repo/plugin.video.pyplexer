@@ -23,6 +23,7 @@ from gui.builders.common import get_fanart_image
 from gui.builders.common import get_thumb_image
 from gui.builders.track import create_track_item
 from playback.quality import QualitySearch
+from playback.quality import describe
 from playback.quality import media_details
 from playback.quality import part_index_for_media
 
@@ -291,15 +292,19 @@ def is_transcode_required(context, stream_details, default=False):
         return default
 
     codec = stream_details[0].get('codec')
-    resolution = stream_details[0].get('videoResolution')
     try:
         bit_depth = int(stream_details[0].get('bitDepth', 8))
     except (TypeError, ValueError):
         bit_depth = None
 
+    try:
+        height = int(stream_details[0].get('height') or 0)
+    except (TypeError, ValueError):
+        height = 0
+
     if codec and (context.settings.transcode_hevc() and codec.lower() == 'hevc'):
         return True
-    if resolution and (context.settings.transcode_g1080() and resolution.lower() == '4k'):
+    if height > 1088 and context.settings.transcode_g1080():
         return True
     if bit_depth and (context.settings.transcode_g8bit() and bit_depth > 8):
         return True
@@ -674,9 +679,8 @@ class MediaSelect:
                 if items[1]:
                     name = items[1].split('/')[-1]
                 else:
-                    name = '%s %s %sMbps' % (items[0].split('.')[-1],
-                                             details[index_count]['videoResolution'],
-                                             details[index_count]['bitrate'])
+                    name = '%s - %s' % (items[0].split('.')[-1],
+                                        describe(details[index_count]))
 
                 if force_dvd and '.ifo' in name.lower():
                     LOG.debug('Found IFO DVD file in ' + name)

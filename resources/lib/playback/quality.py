@@ -34,35 +34,181 @@ MAX_SHOWS = 2  # shows opened per server when matching an episode by title
 MIN_BITRATE_GAIN = 1.15  # 15% more bitrate before a version counts as better
 MIN_BITRATE_DELTA = 1.0  # ... and at least 1 Mbps more
 
-RESOLUTION_RANK = {
-    'SD': 1,
-    'HD 720': 2,
-    'HD 1080': 3,
-    '4K': 4,
+HDR_MARKERS = ('hdr', 'pq', 'hlg', 'smpte2084', 'bt2020')
+
+#: Marketing names for the audio codecs Plex reports on a Media element.
+AUDIO_NAMES = {
+    'aac': 'AAC',
+    'aac_latm': 'AAC',
+    'ac3': 'Dolby Digital',
+    'ac4': 'Dolby AC-4',
+    'alac': 'ALAC',
+    'dca': 'DTS',
+    'dts': 'DTS',
+    'eac3': 'Dolby Digital Plus',
+    'flac': 'FLAC',
+    'lpcm': 'PCM',
+    'mp2': 'MP2',
+    'mp3': 'MP3',
+    'opus': 'Opus',
+    'pcm': 'PCM',
+    'truehd': 'Dolby TrueHD',
+    'vorbis': 'Vorbis',
+    'wmapro': 'WMA Pro',
+    'wmav2': 'WMA',
 }
 
-HDR_MARKERS = ('hdr', 'pq', 'hlg', 'smpte2084', 'bt2020')
+#: The DTS family is told apart by the profile of its audio stream.
+DTS_PROFILES = {
+    '96/24': 'DTS 96/24',
+    'dts_express': 'DTS Express',
+    'dts_x': 'DTS:X',
+    'dtsx': 'DTS:X',
+    'es': 'DTS-ES',
+    'es discrete': 'DTS-ES',
+    'es matrix': 'DTS-ES',
+    'express': 'DTS Express',
+    'hra': 'DTS-HD HRA',
+    'lbr': 'DTS Express',
+    'ma': 'DTS-HD MA',
+    'x': 'DTS:X',
+}
+
+DTS_CODECS = ('dca', 'dts', 'dca-ma', 'dts-hd', 'dtshd')
+
+CHANNEL_LAYOUTS = {
+    1: '1.0',
+    2: '2.0',
+    3: '2.1',
+    4: '4.0',
+    5: '4.1',
+    6: '5.1',
+    7: '6.1',
+    8: '7.1',
+    9: '8.1',
+    10: '9.1',
+    12: '11.1',
+}
+
+
+def resolution_height(value):
+    """Plex mixes 'sd', '4k' and plain heights in videoResolution."""
+    text = str(value or '').lower()
+    if text == 'sd':
+        return 480
+    if text == '4k':
+        return 2160
+
+    try:
+        return int(text)
+    except (TypeError, ValueError):
+        return 0
 
 
 def resolution_label(value):
-    """Map Plex' mixed videoResolution values ('sd', '720', '4k') onto the
-    labels used throughout the add-on."""
+    """Label as viewers know it: 2160p, 1080p, 720p, ..."""
+    text = str(value or '').lower()
+    if text == 'sd':
+        return 'SD'
+
+    height = resolution_height(value)
+    if not height:
+        return ''
+
+    return '2160p' if height > 1088 else '%dp' % height
+
+
+def resolution_rank(height):
+    """Bucket used for comparing, so 1082 does not beat 1080."""
+    if height > 1088:
+        return 4
+    if height >= 1080:
+        return 3
+    if height >= 720:
+        return 2
+    if height > 0:
+        return 1
+    return 0
+
+
+def audio_stream(media):
+    """The audio stream that will be played, when the response carries one -
+    /library/all and allLeaves only return the Media attributes."""
+    fallback = None
+
+    for stream in media.iter('Stream'):
+        if stream.get('streamType') != '2':
+            continue
+        if stream.get('selected') == '1':
+            return stream
+        if fallback is None:
+            fallback = stream
+
+    return fallback
+
+
+def audio_label(media):
+    """'Dolby Digital Plus 7.1', 'DTS-HD MA 7.1', 'Dolby TrueHD 7.1 (Atmos)'."""
+    codec = (media.get('audioCodec') or '').lower()
+    channels = media.get('audioChannels')
+    profile = ''
+    layout = ''
+    described = ''
+
+    stream = audio_stream(media)
+    if stream is not None:
+        codec = (stream.get('codec') or codec).lower()
+        channels = stream.get('channels') or channels
+        profile = (stream.get('profile') or '').lower()
+        layout = stream.get('audioChannelLayout') or ''
+        described = ' '.join(filter(None, [stream.get('displayTitle'),
+                                           stream.get('extendedDisplayTitle'),
+                                           stream.get('title')])).lower()
+
+    name = _audio_name(codec, profile, described)
+    if not name:
+        return ''
+
+    parts = [name, _channel_layout(channels, layout)]
+    if _is_atmos(profile, described):
+        parts.append('(Atmos)')
+
+    return ' '.join([part for part in parts if part])
+
+
+def _audio_name(codec, profile, described):
+    if not codec:
+        return ''
+
+    if codec in DTS_CODECS:
+        if any(marker in described for marker in ('dts:x', 'dts-x', 'dtsx')):
+            return 'DTS:X'
+        if profile in DTS_PROFILES:
+            return DTS_PROFILES[profile]
+        if codec in ('dca-ma', 'dts-hd', 'dtshd'):
+            return 'DTS-HD MA'
+        return 'DTS'
+
+    return AUDIO_NAMES.get(codec, codec.upper())
+
+
+def _is_atmos(profile, described):
+    haystack = '%s %s' % (profile, described)
+    return 'atmos' in haystack or 'joc' in haystack
+
+
+def _channel_layout(channels, layout):
+    # '7.1(side)' -> '7.1', but 'stereo' and 'mono' fall through to the count
+    layout = (layout or '').split('(')[0].strip()
+    if re.match(r'^\d+\.\d+$', layout):
+        return layout
+
     try:
-        if str(value).lower() == 'sd':
-            return 'SD'
-        if str(value).lower() == '4k':
-            return '4K'
-        height = int(value)
+        count = int(channels)
     except (TypeError, ValueError):
         return ''
 
-    if height > 1088:
-        return '4K'
-    if height >= 1080:
-        return 'HD 1080'
-    if height >= 720:
-        return 'HD 720'
-    return 'SD'
+    return CHANNEL_LAYOUTS.get(count, '%d.0' % count if count else '')
 
 
 def media_details(media):
@@ -80,9 +226,11 @@ def media_details(media):
     return {
         'bitrate': bitrate,
         'bitDepth': bit_depth,
+        'height': resolution_height(media.get('videoResolution')),
         'videoResolution': resolution_label(media.get('videoResolution')),
         'container': media.get('container', 'unknown'),
         'codec': media.get('videoCodec'),
+        'audio': audio_label(media),
         'audioCodec': media.get('audioCodec'),
         'audioChannels': media.get('audioChannels'),
         'hdr': _is_hdr(media),
@@ -117,8 +265,13 @@ def quality_score(details):
     except (TypeError, ValueError):
         bit_depth = 8
 
+    try:
+        height = int(details.get('height') or 0)
+    except (TypeError, ValueError):
+        height = 0
+
     return (
-        RESOLUTION_RANK.get(details.get('videoResolution'), 0),
+        resolution_rank(height),
         1 if details.get('hdr') else 0,
         bit_depth,
         bitrate,
@@ -164,7 +317,7 @@ def part_index_for_media(details, media_index):
 
 
 def describe(details):
-    """Human readable one liner, e.g. '4K HDR - HEVC 10 bit - 24.5 Mbps - MKV'."""
+    """One liner, e.g. '2160p HDR - Dolby TrueHD 7.1 (Atmos) - 30.0 Mb/s - MKV'."""
     parts = []
 
     resolution = details.get('videoResolution')
@@ -173,28 +326,13 @@ def describe(details):
     elif details.get('hdr'):
         parts.append('HDR')
 
-    codec = details.get('codec')
-    if codec:
-        codec = codec.upper()
-        try:
-            bit_depth = int(details.get('bitDepth') or 8)
-        except (TypeError, ValueError):
-            bit_depth = 8
-        if bit_depth > 8:
-            codec = '%s %s bit' % (codec, bit_depth)
-        parts.append(codec)
-
-    audio = details.get('audioCodec')
+    audio = details.get('audio')
     if audio:
-        channels = str(details.get('audioChannels') or '')
-        if channels in ('6', '8'):
-            parts.append('%s %d.1' % (audio.upper(), int(channels) - 1))
-        else:
-            parts.append(audio.upper())
+        parts.append(audio)
 
     bitrate = details.get('bitrate')
     if bitrate:
-        parts.append('%s Mbps' % bitrate)
+        parts.append('%s Mb/s' % bitrate)
 
     container = details.get('container')
     if container and container != 'unknown':
