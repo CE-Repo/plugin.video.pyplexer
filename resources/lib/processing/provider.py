@@ -32,8 +32,10 @@ _FOLDER_TYPES = ('show', 'season', 'artist', 'album')
 _FOLDER_TAGS = ('Hub', 'Directory', 'Playlist')
 _CONTENT_TAGS = ('Hub', 'Directory', 'Playlist', 'Video')
 
-#: Items whose plot is fetched in one go; a huge page is left alone.
-MAX_SUMMARY_LOOKUP = 40
+#: Items whose plot is fetched with one request; a long list is done in
+#: several.  Twenty is what the provider hands out per container, so a batch of
+#: that size comes back whole even where the size asked for is ignored.
+SUMMARY_BATCH_SIZE = 20
 
 _MEDIATYPES = {
     'movie': 'movie',
@@ -87,20 +89,29 @@ def _attach_summaries(context, base, nodes):
     missing = [node for node in nodes
                if not node.get('summary') and node.get('ratingKey')]
 
-    if not missing or len(missing) > MAX_SUMMARY_LOOKUP:
-        return
-
-    keys = ','.join([node.get('ratingKey') for node in missing])
-    tree = context.plex_network.get_provider_metadata(base, keys)
-    if tree is None:
-        LOG.debug('No summaries for %s item(s)' % len(missing))
+    if not missing:
         return
 
     summaries = {}
-    for element in tree.iter():
-        rating_key = element.get('ratingKey')
-        if rating_key and element.get('summary'):
-            summaries[str(rating_key)] = element.get('summary')
+
+    # a long Watchlist is asked for in batches rather than in one huge URL
+    for offset in range(0, len(missing), SUMMARY_BATCH_SIZE):
+        batch = missing[offset:offset + SUMMARY_BATCH_SIZE]
+        keys = ','.join([node.get('ratingKey') for node in batch])
+
+        tree = context.plex_network.get_provider_metadata(base, keys)
+        if tree is None:
+            LOG.debug('No summaries for %s item(s)' % len(batch))
+            continue
+
+        before = len(summaries)
+        for element in tree.iter():
+            rating_key = element.get('ratingKey')
+            if rating_key and element.get('summary'):
+                summaries[str(rating_key)] = element.get('summary')
+
+        LOG.debug('Summary batch: asked for %s, answered with %s' %
+                  (len(batch), len(summaries) - before))
 
     filled = 0
     for node in missing:

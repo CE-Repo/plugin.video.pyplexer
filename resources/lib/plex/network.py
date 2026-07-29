@@ -33,6 +33,11 @@ WINDOW = xbmcgui.Window(10000)
 PROVIDER_METADATA = 'https://metadata.provider.plex.tv'
 PROVIDER_DISCOVER = 'https://discover.provider.plex.tv'
 
+#: The Watchlist is handed out in pages; asked for in one go the provider still
+#: answers with what it considers a container, so the pages are counted through.
+WATCHLIST_PAGE_SIZE = 100
+MAX_WATCHLIST_ITEMS = 2000
+
 
 class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
@@ -519,19 +524,70 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
             return None
 
     def get_watchlist(self, path=None):
-        if path is None:
-            path = '/library/sections/watchlist/all' \
-                   '?includeCollections=1&includeExternalMedia=1'
-        data = self.talk_to_provider(PROVIDER_DISCOVER, path)
-        return self._parse_provider_xml(data)
+        """The whole Watchlist, not just its first page.
+
+        The provider hands out a container of twenty at a time and says in
+        ``totalSize`` how many there are; the pages are collected into one
+        container so the listing shows everything at once.
+        """
+        if path is not None:
+            return self._parse_provider_xml(self.talk_to_provider(PROVIDER_DISCOVER, path))
+
+        path = '/library/sections/watchlist/all' \
+               '?includeCollections=1&includeExternalMedia=1'
+
+        container = None
+        start = 0
+
+        while start < MAX_WATCHLIST_ITEMS:
+            page = self._parse_provider_xml(self.talk_to_provider(
+                PROVIDER_DISCOVER, '%s&X-Plex-Container-Start=%s&X-Plex-Container-Size=%s' %
+                (path, start, WATCHLIST_PAGE_SIZE)))
+
+            if page is None:
+                break
+
+            children = list(page)
+            if container is None:
+                container = page
+            else:
+                for child in children:
+                    container.append(child)
+
+            start += len(children)
+
+            try:
+                total = int(page.get('totalSize') or 0)
+            except (TypeError, ValueError):
+                total = 0
+
+            if not children or (total and start >= total):
+                break
+            if not total and len(children) < WATCHLIST_PAGE_SIZE:
+                break  # nothing says how many there are, and the page was short
+
+        if container is not None:
+            container.set('size', str(len(list(container))))
+            LOG.debug('Watchlist holds %s item(s)' % len(list(container)))
+
+        return container
 
     def get_provider_metadata(self, base, rating_keys):
         """Metadata of one or several provider items, rating keys separated by
-        commas - the listings leave out fields the metadata carries."""
+        commas - the listings leave out fields the metadata carries.
+
+        The answer is a container like any other and is cut to twenty unless it
+        is told how many items are being asked for.
+        """
         if not rating_keys:
             return None
 
-        data = self.talk_to_provider(base, '/library/metadata/%s' % rating_keys)
+        wanted = len(rating_keys.split(','))
+
+        data = self.talk_to_provider(
+            base, '/library/metadata/%s?X-Plex-Container-Start=0&X-Plex-Container-Size=%s' %
+            (rating_keys, wanted))
+
         return self._parse_provider_xml(data)
 
     def get_discover_hubs(self):
