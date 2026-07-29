@@ -24,7 +24,7 @@ MAX_STREAM_LOOKUP = 30
 #: Everything the stream lookup does not need, kept out of the answer.
 SKIPPED_ELEMENTS = ('Genre', 'Country', 'Role', 'Writer', 'Director', 'Producer',
                     'Collection', 'Rating', 'Review', 'Chapter', 'Similar',
-                    'Related', 'Extras', 'Preferences', 'Guid', 'Image',
+                    'Related', 'Extras', 'Preferences', 'Guid',
                     'UltraBlurColors', 'Marker')
 
 
@@ -92,6 +92,12 @@ def attach_media_streams(server, elements):
             element.remove(media)
         for media in video.findall('Media'):
             element.append(media)
+
+        # the same answer holds the artwork the listing left out, the clear
+        # logo among it
+        if element.find('Image') is None:
+            for image in video.findall('Image'):
+                element.append(image)
 
         grafted += 1
 

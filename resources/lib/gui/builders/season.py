@@ -4,6 +4,7 @@ from core.constants import MODES
 from core.context import GUIItem
 from core.strings import i18n
 from gui.builders.common import get_banner_image
+from gui.builders.common import get_clearlogo_image
 from gui.builders.common import get_fanart_image
 from gui.builders.common import get_thumb_image
 from gui.context_menu import ContextMenu
@@ -39,6 +40,7 @@ def create_season_item(context, item, library=False):
         'UnWatchedEpisodes': info_labels['episode'] - _watched,
         'thumb': get_thumb_image(context, item.server, item.data),
         'fanart_image': get_fanart_image(context, item.server, item.data),
+        'clearlogo': get_clearlogo_image(context, item.server, item.data),
         'banner': get_banner_image(context, item.server, item.tree),
         'key': item.data.get('key', ''),
         'ratingKey': str(item.data.get('ratingKey', 0)),

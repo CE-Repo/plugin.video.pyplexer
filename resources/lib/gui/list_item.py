@@ -116,6 +116,7 @@ def _get_art(item):
     fanart = item.extra.get('fanart_image', '')
     thumb = item.extra.get('thumb', '')
     banner = item.extra.get('banner', '')
+    clearlogo = item.extra.get('clearlogo', '')
     poster = item.extra.get('season_thumb', '') or thumb
 
     # Only set art that actually exists so Kodi/the skin can fall back to its
@@ -125,6 +126,10 @@ def _get_art(item):
         art['fanart'] = fanart
     if banner:
         art['banner'] = banner
+    if clearlogo:
+        # both names are in use, skins ask for one or the other
+        art['clearlogo'] = clearlogo
+        art['logo'] = clearlogo
     if thumb:
         art['thumb'] = thumb
         art['icon'] = thumb

@@ -8,6 +8,7 @@ from core.context import GUIItem
 from core.logger import Logger
 from core.strings import i18n
 from gui.builders.common import get_banner_image
+from gui.builders.common import get_clearlogo_image
 from gui.builders.common import get_fanart_image
 from gui.builders.common import get_media_data
 from gui.builders.common import get_metadata
@@ -67,13 +68,16 @@ def create_episode_item(context, item, library=False):
     episode = info_labels['episode']
 
     if not library:
-        if prefix_sxee or for_player:
+        # only a player needs the numbers in the title: Kodi has them as
+        # labels and every skin writes its own '2x02.' in front of the episode
+        if for_player:
             info_labels['title'] = 'S%s/E%s · %s' % (str(season).zfill(2),
                                                      str(episode).zfill(2),
                                                      info_labels['title'])
-            if prefix_tvshow and not for_player:
-                info_labels['title'] = '%s - %s' % \
-                                       (info_labels['tvshowtitle'], info_labels['title'])
+
+        elif prefix_sxee and prefix_tvshow:
+            info_labels['title'] = '%s - %s' % \
+                                   (info_labels['tvshowtitle'], info_labels['title'])
 
         if prefix_server:
             info_labels['title'] = '%s: %s' % (item.server.get_name(), info_labels['title'])
@@ -95,6 +99,7 @@ def create_episode_item(context, item, library=False):
         'thumb': art.get('thumb', ''),
         'fanart_image': art.get('fanart', ''),
         'banner': art.get('banner', ''),
+        'clearlogo': art.get('clearlogo', ''),
         'season_thumb': art.get('season_thumb', ''),
         'key': item.data.get('key', ''),
         'ratingKey': str(item.data.get('ratingKey', 0)),
@@ -143,6 +148,7 @@ def create_episode_item(context, item, library=False):
 def _get_art(context, item):
     art = {
         'banner': '',
+        'clearlogo': '',
         'fanart': '',
         'season_thumb': '',
         'section_art': '',
@@ -152,6 +158,9 @@ def _get_art(context, item):
     if not context.settings.skip_images():
         art.update({
             'banner': get_banner_image(context, item.server, item.tree),
+            # an episode carries the logo of its show
+            'clearlogo': (get_clearlogo_image(context, item.server, item.data) or
+                          get_clearlogo_image(context, item.server, item.tree)),
             'fanart': get_fanart_image(context, item.server, item.data),
             'season_thumb': '',
             'section_art': get_fanart_image(context, item.server, item.tree),

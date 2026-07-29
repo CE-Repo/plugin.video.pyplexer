@@ -106,6 +106,35 @@ def get_banner_image(context, server, data, width=720, height=720):
     return ''
 
 
+def get_clearlogo_image(context, server, data):
+    """The logo Plex keeps as an <Image type="clearLogo"> below an item.
+
+    An episode carries the logo of its show, which is what a skin wants to put
+    on screen.  The image is handed over as it is: it is a PNG that lives from
+    its transparency, and the photo transcoder would flatten it onto a
+    background.
+    """
+    if context.settings.skip_images() or data is None:
+        return ''
+
+    logo = ''
+    for image in data.findall('Image'):
+        if (image.get('type') or '').lower() == 'clearlogo':
+            logo = image.get('url') or ''
+            break
+
+    if not logo:
+        logo = data.get('clearLogo') or ''
+
+    if logo.startswith('http'):
+        return logo
+
+    if logo.startswith('/'):
+        return server.get_kodi_header_formatted_url(logo)
+
+    return ''
+
+
 def get_fanart_image(context, server, data, width=1280, height=720):
     """
         Simply take a URL or path and determine how to format for fanart
