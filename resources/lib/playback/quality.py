@@ -34,7 +34,7 @@ CANCELLED = object()
 
 MAX_SERVERS = 8  # servers queried in parallel
 MAX_VERSIONS = 12  # versions collected per server
-MAX_SHOWS = 2  # shows opened per server when matching an episode by title
+MAX_SHOWS = 4  # libraries opened per server when matching an episode by title
 MIN_BITRATE_GAIN = 1.15  # 15% more bitrate before a version counts as better
 MIN_BITRATE_DELTA = 1.0  # ... and at least 1 Mbps more
 
@@ -544,33 +544,71 @@ class QualitySearch:
         then the episode by its season and episode number."""
         title, season, episode = self._show()
 
-        tree = self._search(server, title)
-        if tree is None:
-            return []
-
-        wanted = normalise_title(title)
         found = []
-        shows = 0
 
-        for directory in tree.iter('Directory'):
-            if directory.get('type') != 'show':
-                continue
-            if normalise_title(directory.get('title')) != wanted:
-                continue
-
-            rating_key = directory.get('ratingKey')
-            if not rating_key:
-                continue
-
-            shows += 1
-            if shows > MAX_SHOWS:
-                break
-
+        for rating_key in self._find_shows(server, title)[:MAX_SHOWS]:
             leaves = self._talk(server, '/library/metadata/%s/allLeaves' % rating_key)
             if leaves is None:
                 continue
 
             found += self._versions_from(server, self._episode_matches(leaves, season, episode))
+
+        if not found:
+            LOG.debug('No other copy of %s S%sE%s on %s' %
+                      (title, season, episode, server.get_name()))
+
+        return found
+
+    def _find_shows(self, server, title):
+        """Rating keys of the show, one per library that holds it.  The global
+        search answers first; a library that does not show up there is asked
+        through its own section before the server is given up on."""
+        wanted = normalise_title(title)
+
+        found = self._shows_from(self._search(server, title), wanted)
+        if found:
+            return found
+
+        for section in self._show_sections(server):
+            tree = self._talk(server, '%s/search?type=2&query=%s' %
+                              (section.get_path(), quote(title, safe='')))
+            for rating_key in self._shows_from(tree, wanted):
+                if rating_key not in found:
+                    found.append(rating_key)
+
+        return found
+
+    @staticmethod
+    def _show_sections(server):
+        try:
+            return [section for section in server.get_sections()
+                    if section.get_type() == 'show']
+        except Exception as error:  # pylint: disable=broad-except
+            LOG.debug('Sections unavailable on %s: %s' % (server.get_name(), error))
+            return []
+
+    @staticmethod
+    def _shows_from(tree, wanted):
+        """Shows of that name, whatever spelling the library keeps them under -
+        one library holds the localised title, the next the original one."""
+        if tree is None:
+            return []
+
+        found = []
+
+        for directory in tree.iter('Directory'):
+            if directory.get('type') != 'show':
+                continue
+
+            candidates = (directory.get('title'), directory.get('originalTitle'),
+                          directory.get('titleSort'))
+            if not any(normalise_title(candidate) == wanted
+                       for candidate in candidates if candidate):
+                continue
+
+            rating_key = directory.get('ratingKey')
+            if rating_key and rating_key not in found:
+                found.append(rating_key)
 
         return found
 
