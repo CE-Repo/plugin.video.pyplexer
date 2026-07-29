@@ -32,6 +32,9 @@ _FOLDER_TYPES = ('show', 'season', 'artist', 'album')
 _FOLDER_TAGS = ('Hub', 'Directory', 'Playlist')
 _CONTENT_TAGS = ('Hub', 'Directory', 'Playlist', 'Video')
 
+#: Items whose plot is fetched in one go; a huge page is left alone.
+MAX_SUMMARY_LOOKUP = 40
+
 _MEDIATYPES = {
     'movie': 'movie',
     'show': 'tvshow',
@@ -51,8 +54,11 @@ def process_provider(context, base, tree, in_watchlist=False):
 
     token = context.plex_network.get_provider_token()
 
+    nodes = list(_iter_nodes(tree))
+    _attach_summaries(context, base, nodes)
+
     items = []
-    for node in _iter_nodes(tree):
+    for node in nodes:
         entry = _build_item(base, token, node, in_watchlist)
         if entry:
             items.append(entry)
@@ -68,6 +74,42 @@ def _iter_nodes(tree):
     for node in list(tree):
         if node.tag in _CONTENT_TAGS:
             yield node
+
+
+def _attach_summaries(context, base, nodes):
+    """Fill in the plot the listing did not carry.
+
+    The Watchlist answers with the tagline but without the summary; the
+    metadata of the items has it.  Plex takes several rating keys in one go, so
+    a whole page costs a single request.  Anything that does not come back is
+    simply left without a plot.
+    """
+    missing = [node for node in nodes
+               if not node.get('summary') and node.get('ratingKey')]
+
+    if not missing or len(missing) > MAX_SUMMARY_LOOKUP:
+        return
+
+    keys = ','.join([node.get('ratingKey') for node in missing])
+    tree = context.plex_network.get_provider_metadata(base, keys)
+    if tree is None:
+        LOG.debug('No summaries for %s item(s)' % len(missing))
+        return
+
+    summaries = {}
+    for element in tree.iter():
+        rating_key = element.get('ratingKey')
+        if rating_key and element.get('summary'):
+            summaries[str(rating_key)] = element.get('summary')
+
+    filled = 0
+    for node in missing:
+        summary = summaries.get(str(node.get('ratingKey')))
+        if summary:
+            node.set('summary', summary)
+            filled += 1
+
+    LOG.debug('Summary filled in for %s of %s item(s)' % (filled, len(missing)))
 
 
 def _build_item(base, token, node, in_watchlist=False):
@@ -169,9 +211,10 @@ def _info_labels(title, node_type, node):
     if mediatype:
         info['mediatype'] = mediatype
 
-    plot = node.get('summary') or node.get('tagline')
-    if plot:
-        info['plot'] = plot
+    # the tagline is not a plot; showing it as one puts the same sentence on
+    # the screen twice
+    if node.get('summary'):
+        info['plot'] = node.get('summary')
 
     if node.get('tagline'):
         info['tagline'] = node.get('tagline')

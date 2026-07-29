@@ -525,6 +525,15 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
         data = self.talk_to_provider(PROVIDER_DISCOVER, path)
         return self._parse_provider_xml(data)
 
+    def get_provider_metadata(self, base, rating_keys):
+        """Metadata of one or several provider items, rating keys separated by
+        commas - the listings leave out fields the metadata carries."""
+        if not rating_keys:
+            return None
+
+        data = self.talk_to_provider(base, '/library/metadata/%s' % rating_keys)
+        return self._parse_provider_xml(data)
+
     def get_discover_hubs(self):
         """The account-level Plex Discover feed."""
         tree = self._parse_provider_xml(self.talk_to_provider(PROVIDER_DISCOVER, '/hubs'))
