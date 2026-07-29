@@ -13,7 +13,7 @@ def run():
     monitor = xbmc.Monitor()
     dialog = SkipIntroDialog('skip_intro.xml',
                              CONFIG['addon'].getAddonInfo('path'),
-                             'default', '720p',
+                             'default', '1080i',
                              intro_start=0, intro_end=PREVIEW_LENGTH)
     xbmc.executebuiltin('Dialog.Close(all,true)')
     dialog.show()

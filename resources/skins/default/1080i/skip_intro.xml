@@ -7,35 +7,35 @@
         <control type="group">
             <animation type="WindowOpen" reversible="false">
                 <effect type="fade" start="0" end="100" time="240" tween="sine" easing="out"/>
-                <effect type="slide" start="0,48" end="0,0" time="320" tween="cubic" easing="out"/>
+                <effect type="slide" start="0,72" end="0,0" time="320" tween="cubic" easing="out"/>
             </animation>
             <animation type="WindowClose" reversible="false">
                 <effect type="fade" start="100" end="0" time="200" tween="sine" easing="in"/>
-                <effect type="slide" start="0,0" end="0,48" time="240" tween="cubic" easing="in"/>
+                <effect type="slide" start="0,0" end="0,72" time="240" tween="cubic" easing="in"/>
             </animation>
 
             <!-- scrim, keeps the button readable on bright scenes -->
             <control type="image">
                 <left>0</left>
                 <bottom>0</bottom>
-                <width>1280</width>
-                <height>200</height>
+                <width>1920</width>
+                <height>220</height>
                 <aspectratio>stretch</aspectratio>
                 <texture colordiffuse="99000000">background.png</texture>
             </control>
 
             <control type="group">
-                <right>56</right>
-                <bottom>56</bottom>
-                <width>360</width>
-                <height>96</height>
+                <right>70</right>
+                <bottom>70</bottom>
+                <width>500</width>
+                <height>106</height>
 
                 <!-- accent glow, only while the button holds focus -->
                 <control type="image" id="3003">
-                    <left>-28</left>
-                    <top>-20</top>
-                    <width>416</width>
-                    <height>116</height>
+                    <left>-30</left>
+                    <top>-22</top>
+                    <width>560</width>
+                    <height>128</height>
                     <aspectratio>stretch</aspectratio>
                     <texture colordiffuse="A6F1B22B">button_glow.png</texture>
                     <visible>Control.HasFocus(3002)</visible>
@@ -48,20 +48,20 @@
                 <control type="button" id="3002">
                     <left>0</left>
                     <top>0</top>
-                    <width>360</width>
-                    <height>76</height>
+                    <width>500</width>
+                    <height>84</height>
                     <label>$ADDON[plugin.video.pyplexer 30751]</label>
                     <font>font20_title</font>
-                    <align>left</align>
+                    <align>center</align>
                     <aligny>center</aligny>
-                    <textoffsetx>80</textoffsetx>
+                    <textoffsetx>0</textoffsetx>
                     <textcolor>FFF4F5F7</textcolor>
                     <focusedcolor>FF14161A</focusedcolor>
                     <disabledcolor>66FFFFFF</disabledcolor>
                     <shadowcolor>59000000</shadowcolor>
-                    <texturefocus border="14" colordiffuse="FFF1B22B">button_focus.png</texturefocus>
-                    <texturenofocus border="14" colordiffuse="D91B1E24">button.png</texturenofocus>
-                    <animation effect="zoom" start="100" end="103" center="180,38" time="140"
+                    <texturefocus border="16" colordiffuse="FFF1B22B">button_focus.png</texturefocus>
+                    <texturenofocus border="16" colordiffuse="D91B1E24">button.png</texturenofocus>
+                    <animation effect="zoom" start="100" end="103" center="250,42" time="140"
                                tween="sine" easing="out"
                                condition="Control.HasFocus(3002)">Conditional</animation>
                 </control>
@@ -69,18 +69,18 @@
                 <!-- glyph is drawn over the button, matching its text colours -->
                 <control type="image" id="3004">
                     <left>30</left>
-                    <top>24</top>
-                    <width>28</width>
-                    <height>28</height>
+                    <top>26</top>
+                    <width>32</width>
+                    <height>32</height>
                     <aspectratio>keep</aspectratio>
                     <texture colordiffuse="FFF4F5F7">icon_skip.png</texture>
                     <visible>!Control.HasFocus(3002)</visible>
                 </control>
                 <control type="image" id="3005">
                     <left>30</left>
-                    <top>24</top>
-                    <width>28</width>
-                    <height>28</height>
+                    <top>26</top>
+                    <width>32</width>
+                    <height>32</height>
                     <aspectratio>keep</aspectratio>
                     <texture colordiffuse="FF14161A">icon_skip.png</texture>
                     <visible>Control.HasFocus(3002)</visible>
@@ -89,16 +89,16 @@
                 <!-- remaining intro time, width is driven by SkipIntroDialog -->
                 <control type="image" id="3010">
                     <left>0</left>
-                    <top>86</top>
-                    <width>360</width>
+                    <top>96</top>
+                    <width>500</width>
                     <height>8</height>
                     <aspectratio>stretch</aspectratio>
                     <texture border="6,0,6,0" colordiffuse="40FFFFFF">bar.png</texture>
                 </control>
                 <control type="image" id="3011">
                     <left>0</left>
-                    <top>86</top>
-                    <width>360</width>
+                    <top>96</top>
+                    <width>500</width>
                     <height>8</height>
                     <aspectratio>stretch</aspectratio>
                     <texture border="6,0,6,0" colordiffuse="E6F1B22B">bar.png</texture>

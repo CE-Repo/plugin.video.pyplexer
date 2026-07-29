@@ -11,7 +11,7 @@ class SkipIntroDialog(WindowXMLDialog):
 
     BUTTON_ID = 3002
     PROGRESS_ID = 3011
-    PROGRESS_WIDTH = 360  # keep in sync with skip_intro.xml
+    PROGRESS_WIDTH = 500  # keep in sync with skip_intro.xml
 
     def __init__(self, *args, **kwargs):
         self.intro_start = kwargs.pop('intro_start', None)

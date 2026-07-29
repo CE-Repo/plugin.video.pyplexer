@@ -206,7 +206,7 @@ class PlaybackMonitorThread(threading.Thread):
 
         self._dialog_skip_intro = SkipIntroDialog('skip_intro.xml',
                                                   CONFIG['addon'].getAddonInfo('path'),
-                                                  'default', '720p',
+                                                  'default', '1080i',
                                                   intro_start=self._intro_start(),
                                                   intro_end=self._intro_end())
 
