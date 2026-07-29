@@ -509,6 +509,51 @@ def part_index_for_media(details, media_index):
     return None
 
 
+def kodi_hdr_type(details):
+    """The value Kodi keeps in ListItem.HdrType, which is what a skin compares
+    against to show its Dolby Vision or HDR flag."""
+    hdr = (details.get('hdr') or '').lower()
+
+    if not hdr:
+        return ''
+    if 'dv' in hdr.split() or 'dolby vision' in hdr:
+        return 'dolbyvision'
+    if 'hlg' in hdr:
+        return 'hlg'
+
+    return 'hdr10'
+
+
+def kodi_audio_codec(details):
+    """The codec name Kodi and the skins know, worked out from the audio that
+    was found: 'dtshd_ma_x' for DTS:X, 'truehd_atmos' for Atmos, and so on.
+
+    A skin picks its flag by comparing this name, so 'dca' with a DTS:X profile
+    has to arrive as the name that stands for DTS:X.
+    """
+    audio = (details.get('audio') or '').lower()
+    atmos = 'atmos' in audio
+
+    if 'truehd' in audio:
+        return 'truehd_atmos' if atmos else 'truehd'
+    if 'dolby digital plus' in audio or 'dolby digital+' in audio:
+        return 'eac3_ddp_atmos' if atmos else 'eac3'
+    if 'dolby digital' in audio:
+        return 'ac3'
+    if 'dts:x' in audio:
+        return 'dtshd_ma_x'
+    if 'dts-hd ma' in audio:
+        return 'dtshd_ma'
+    if 'dts-hd hra' in audio:
+        return 'dtshd_hra'
+    if 'dts express' in audio:
+        return 'dtshd'
+    if 'dts' in audio:
+        return 'dts'
+
+    return (details.get('audioCodec') or '').lower()
+
+
 def dynamic_range(details):
     """The HDR format, or 'SDR' for a video that carries none - a viewer should
     not have to read the missing word."""

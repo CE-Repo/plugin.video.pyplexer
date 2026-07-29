@@ -5,6 +5,8 @@ from urllib.parse import quote_plus
 
 from core.logger import Logger
 from playback.quality import describe_short
+from playback.quality import kodi_audio_codec
+from playback.quality import kodi_hdr_type
 from playback.quality import media_details
 
 LOG = Logger()
@@ -129,40 +131,71 @@ def get_fanart_image(context, server, data, width=1280, height=720):
     return ''
 
 
-def get_media_data(tag_dict, media=None, item=None):
+def _as_int(value, fallback=0):
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return fallback
+
+
+def _as_float(value, fallback=0.0):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return fallback
+
+
+def get_media_data(tag_dict, media=None, item=None, for_player=False):
     """
         Extra the media info_labels from the XML
         @input: dict of <media /> tag attributes, optionally the element itself
-                so the streams and parts below it can be read as well, and the
-                item it belongs to for the edition
+                so the streams and parts below it can be read as well, the item
+                it belongs to for the edition, and whether the listing is being
+                built for a player rather than for Kodi
         @output: dict of required values
     """
-    # the short line under a title, in the same words the version dialog uses
     if media is None:
         media = ETree.Element('Media', {key: str(value)
                                         for key, value in tag_dict.items()})
 
-    codec = describe_short(media_details(media, item))
+    details = media_details(media, item)
+    audio_codec = kodi_audio_codec(details)
+    channels = _as_int(tag_dict.get('audioChannels'))
 
+    # Kodi types these strictly: a float where an int belongs makes the whole
+    # video stream be dropped, and with it the resolution and HDR flags
     stream_info_video = {
         'codec': tag_dict.get('videoCodec', ''),
-        'aspect': float(tag_dict.get('aspectRatio', '1.78')),
-        'height': int(tag_dict.get('height', 0)),
-        'width': int(tag_dict.get('width', 0)),
-        'duration': int(tag_dict.get('duration', 0)) / 1000
+        'aspect': _as_float(tag_dict.get('aspectRatio'), 1.78),
+        'height': _as_int(tag_dict.get('height')),
+        'width': _as_int(tag_dict.get('width')),
+        'duration': _as_int(tag_dict.get('duration')) // 1000,
+        # what a skin compares against for its HDR flag
+        'hdrtype': kodi_hdr_type(details),
     }
+
     stream_info_audio = {
-        # the description goes into the codec, the channel count stays out of
-        # it - players append it to the label and it is already in the audio
-        # part of the description
-        'codec': codec,
-        'channels': 0
+        'codec': audio_codec,
+        'channels': channels,
     }
+
+    languages = details.get('languages') or []
+    if languages:
+        stream_info_audio['language'] = languages[0].lower()
+
+    if for_player:
+        # a player has no flags to show, it writes the stream details into its
+        # label instead - so it gets the description and nothing else, or it
+        # prints the resolution, the codec and the running time around it
+        # the channel count has to be said out loud as zero: left out, Kodi
+        # stores its own -1 and the player prints that as '-1 CH'
+        stream_info_audio = {'codec': describe_short(details), 'channels': 0}
+        stream_info_video = {}
 
     return {
         'VideoResolution': tag_dict.get('videoResolution', ''),
         'VideoCodec': tag_dict.get('videoCodec', ''),
-        'AudioCodec': tag_dict.get('audioCodec', ''),
+        'AudioCodec': audio_codec,
         'AudioChannels': tag_dict.get('audioChannels', ''),
         'VideoAspect': tag_dict.get('aspectRatio', ''),
         'stream_info': {

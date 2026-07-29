@@ -41,9 +41,12 @@ def create_gui_item(context, item):
     if (not context.settings.skip_flags() and
             not item.is_folder and
             item.extra.get('type', 'video').lower() == 'video'):
+        # an empty part is left out rather than added as a blank stream
         stream_info = item.extra.get('stream_info', {})
-        info_tag.add_stream_info('video', stream_info.get('video', {}))
-        info_tag.add_stream_info('audio', stream_info.get('audio', {}))
+        for stream_type in ('video', 'audio'):
+            values = stream_info.get(stream_type)
+            if values:
+                info_tag.add_stream_info(stream_type, values)
 
     list_item.setArt(_get_art(item))
 
