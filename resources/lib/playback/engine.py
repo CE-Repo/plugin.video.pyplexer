@@ -384,6 +384,12 @@ class StreamData:
             self.data['extra']['path'] = content.get('key')
             # used to find the same title on the other servers of the account
             self.data['extra']['guid'] = content.get('guid')
+            # an episode is found through its show, and the guid of the show
+            # holds up where a localised title does not
+            self.data['extra']['show_guid'] = content.get('grandparentGuid')
+            # which library the item is playing from, for the version dialog
+            self.data['extra']['library'] = (content.get('librarySectionTitle') or
+                                             self.tree.get('librarySectionTitle') or '')
             self._content = content
             return True
 
@@ -563,7 +569,7 @@ class StreamData:
 
             # one shared details dict per Media, so the parts of a version stay
             # recognisable as belonging together
-            version_details = media_details(details)
+            version_details = media_details(details, self._content)
 
             parts = details.findall('Part')
 

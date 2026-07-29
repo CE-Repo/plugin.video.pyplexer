@@ -86,7 +86,7 @@ def _build_item(base, token, node, in_watchlist=False):
 
     media = node.find('Media')
     if media is not None:
-        stream_info = get_media_data(dict(media.items())).get('stream_info', {})
+        stream_info = get_media_data(dict(media.items()), media, node).get('stream_info', {})
         info_tag.add_stream_info('video', stream_info.get('video', {}))
         info_tag.add_stream_info('audio', stream_info.get('audio', {}))
 

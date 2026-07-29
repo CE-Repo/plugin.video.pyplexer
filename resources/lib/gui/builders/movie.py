@@ -104,7 +104,8 @@ def create_movie_item(context, item, library=False):
 
     # Add extra media flag data
     if not context.settings.skip_flags():
-        extra_data.update(get_media_data(metadata['attributes']))
+        extra_data.update(get_media_data(metadata['attributes'], metadata.get('media'),
+                                         item.data))
 
     # Build any specific context menu entries
     context_menu = None

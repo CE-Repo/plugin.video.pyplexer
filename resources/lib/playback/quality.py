@@ -25,6 +25,7 @@ import xbmcgui  # pylint: disable=import-error
 from core.constants import CONFIG
 from core.logger import Logger
 from core.strings import i18n_or
+from core.utils import attach_media_streams
 
 LOG = Logger('quality')
 
@@ -39,6 +40,36 @@ MIN_BITRATE_GAIN = 1.15  # 15% more bitrate before a version counts as better
 MIN_BITRATE_DELTA = 1.0  # ... and at least 1 Mbps more
 
 HDR_MARKERS = ('hdr', 'pq', 'hlg', 'smpte2084', 'bt2020')
+
+#: Marketing names for the video codecs Plex reports on a Media element.
+VIDEO_NAMES = {
+    'av1': 'AV1',
+    'h264': 'H264',
+    'hevc': 'H265',
+    'mpeg1video': 'MPEG-1',
+    'mpeg2video': 'MPEG-2',
+    'mpeg4': 'MPEG-4',
+    'vc1': 'VC1',
+    'vp8': 'VP8',
+    'vp9': 'VP9',
+}
+
+#: Where a release comes from, read off the file name - the difference between
+#: a 74 Mb/s remux and a 20 Mb/s web release is worth naming.
+SOURCE_MARKERS = (
+    ('remux', 'Remux'),
+    ('bluray', 'BluRay'),
+    ('blu-ray', 'BluRay'),
+    ('bdrip', 'BDRip'),
+    ('webdl', 'WEB-DL'),
+    ('web-dl', 'WEB-DL'),
+    ('webrip', 'WEBRip'),
+    ('hdtv', 'HDTV'),
+    ('dvdrip', 'DVD'),
+)
+
+#: Languages are shown as the short tag Plex hands out, upper cased.
+MAX_LANGUAGES = 3
 
 #: Marketing names for the audio codecs Plex reports on a Media element.
 AUDIO_NAMES = {
@@ -110,7 +141,7 @@ def resolution_height(value):
 
 
 def resolution_label(value):
-    """Label as viewers know it: 2160p, 1080p, 720p, ..."""
+    """Label as viewers know it: 4K, 1080p, 720p, ..."""
     text = str(value or '').lower()
     if text == 'sd':
         return 'SD'
@@ -119,7 +150,12 @@ def resolution_label(value):
     if not height:
         return ''
 
-    return '2160p' if height > 1088 else '%dp' % height
+    if height > 2400:
+        return '8K'
+    if height > 1088:
+        return '4K'
+
+    return '%dp' % height
 
 
 def resolution_rank(height):
@@ -155,7 +191,9 @@ def audio_label(media):
     """'Dolby Digital Plus 7.1', 'DTS-HD MA 7.1', 'Dolby TrueHD 7.1 (Atmos)'."""
     codec = (media.get('audioCodec') or '').lower()
     channels = media.get('audioChannels')
-    profile = ''
+    # a listing without streams still names the profile on the Media element,
+    # which is what tells DTS:X from plain DTS
+    profile = (media.get('audioProfile') or '').lower()
     layout = ''
     described = ''
 
@@ -163,7 +201,7 @@ def audio_label(media):
     if stream is not None:
         codec = (stream.get('codec') or codec).lower()
         channels = stream.get('channels') or channels
-        profile = (stream.get('profile') or '').lower()
+        profile = (stream.get('profile') or profile).lower()
         layout = stream.get('audioChannelLayout') or ''
         described = ' '.join(filter(None, [stream.get('displayTitle'),
                                            stream.get('extendedDisplayTitle'),
@@ -185,10 +223,15 @@ def _audio_name(codec, profile, described):
         return ''
 
     if codec in DTS_CODECS:
-        if any(marker in described for marker in ('dts:x', 'dts-x', 'dtsx')):
+        haystack = '%s %s' % (profile, described)
+        if any(marker in haystack for marker in ('dts:x', 'dts-x', 'dtsx')):
             return 'DTS:X'
         if profile in DTS_PROFILES:
             return DTS_PROFILES[profile]
+        # Plex writes compound profiles such as 'ma + dts:x'
+        for key, name in DTS_PROFILES.items():
+            if key in [part.strip() for part in profile.replace('+', ' ').split()]:
+                return name
         if codec in ('dca-ma', 'dts-hd', 'dtshd'):
             return 'DTS-HD MA'
         return 'DTS'
@@ -215,17 +258,173 @@ def _channel_layout(channels, layout):
     return CHANNEL_LAYOUTS.get(count, '%d.0' % count if count else '')
 
 
-def media_details(media):
-    """Normalised description of a single <Media> element."""
+def video_stream(media):
+    """The video stream, when the response carries one."""
+    for stream in media.iter('Stream'):
+        if stream.get('streamType') == '1':
+            return stream
+
+    return None
+
+
+def dolby_vision_profile(source):
+    """The DOVIProfile, which decides whether a player can show the file."""
+    return str(source.get('DOVIProfile') or '').strip()
+
+
+def hdr_label(media):
+    """'DV Profile 7', 'Dolby Vision', 'HDR10+', 'HDR10' or 'HLG'.
+
+    Plex names Dolby Vision through the DOVI attributes of the video stream and
+    the transfer curve through colorTrc; a listing that carries neither is left
+    with the profile on the Media element, which only ever says 'HDR' at best.
+    """
+    dolby_vision = False
+    profile = ''
+    hdr = ''
+
+    stream = video_stream(media)
+    sources = [media] if stream is None else [stream, media]
+
+    for source in sources:
+        if source.get('DOVIPresent') == '1' or source.get('DOVIProfile'):
+            dolby_vision = True
+            profile = profile or dolby_vision_profile(source)
+
+        described = ' '.join([str(source.get(key) or '') for key in
+                              ('colorTrc', 'videoProfile', 'displayTitle',
+                               'extendedDisplayTitle')]).lower()
+
+        if not hdr:
+            if 'hdr10+' in described or 'hdr10plus' in described:
+                hdr = 'HDR10+'
+            elif 'smpte2084' in described or 'hdr10' in described:
+                hdr = 'HDR10'
+            elif 'arib-std-b67' in described or 'hlg' in described:
+                hdr = 'HLG'
+            elif 'dovi' in described or 'dolby vision' in described:
+                dolby_vision = True
+            elif 'hdr' in described:
+                hdr = 'HDR'
+
+    named_hdr, named_dv = _hdr_from_file_name(media)
+
+    # Plex reports HDR10+ as plain HDR10, and a listing carries no streams at
+    # all - in both cases the file name is the only thing left to go by
+    if named_hdr == 'HDR10+' and hdr == 'HDR10':
+        hdr = 'HDR10+'
+    elif not hdr:
+        hdr = named_hdr
+    if named_dv:
+        dolby_vision = True
+
+    # Dolby Vision carries an HDR10 base layer anyway, so naming both only
+    # makes the line longer
+    if dolby_vision:
+        return 'DV Profile %s' % profile if profile else 'Dolby Vision'
+
+    return hdr
+
+
+def _file_names(media):
+    return ' '.join([str(part.get('file') or '')
+                     for part in media.iter('Part')]).lower()
+
+
+def _hdr_from_file_name(media):
+    """Releases are named '[DV HDR10Plus]', '[HDR10]', '[HLG]'.  Only whole
+    words count, so 'DVDRip' is not read as Dolby Vision."""
+    names = _file_names(media)
+
+    def _word(marker):
+        return re.search(r'(?<![a-z0-9])%s(?![a-z0-9])' % marker, names) is not None
+
+    hdr = ''
+    if 'hdr10plus' in names or 'hdr10+' in names:
+        hdr = 'HDR10+'
+    elif 'hdr10' in names:
+        hdr = 'HDR10'
+    elif _word('hlg'):
+        hdr = 'HLG'
+    elif _word('hdr'):
+        hdr = 'HDR'
+
+    return hdr, _word('dv') or 'dolbyvision' in names or 'dolby vision' in names
+
+
+def source_label(media):
+    """'Remux', 'BluRay', 'WEB-DL', ... read off the file name."""
+    names = _file_names(media)
+
+    for marker, name in SOURCE_MARKERS:
+        if marker in names:
+            return name
+
+    return ''
+
+
+def language_labels(media, stream_type='2'):
+    """The languages of the audio (or subtitle) streams, the selected one
+    first, as the short tags viewers recognise: ['DE', 'EN']."""
+    labels = []
+
+    for stream in sorted(media.iter('Stream'),
+                         key=lambda item: 0 if item.get('selected') == '1' else 1):
+        if stream.get('streamType') != stream_type:
+            continue
+
+        tag = (stream.get('languageTag') or stream.get('languageCode') or '')[:2].upper()
+        if tag and tag not in labels:
+            labels.append(tag)
+
+    return labels[:MAX_LANGUAGES]
+
+
+def media_size(media):
+    """Size of the version in bytes, the parts of a split file added up."""
+    total = 0
+
+    for part in media.iter('Part'):
+        try:
+            total += int(part.get('size') or 0)
+        except (TypeError, ValueError):
+            continue
+
+    return total
+
+
+def size_label(size):
+    if size >= 1024 ** 3:
+        return '%.1f GB' % (size / 1024 ** 3)
+    if size >= 1024 ** 2:
+        return '%.0f MB' % (size / 1024 ** 2)
+
+    return ''
+
+
+def media_details(media, item=None):
+    """Normalised description of a single <Media> element.  The item it belongs
+    to is only read for the edition, which Plex keeps on the item."""
     try:
         bitrate = round(float(media.get('bitrate', 0)) / 1000, 1)
     except (TypeError, ValueError):
         bitrate = 0.0
 
-    try:
-        bit_depth = int(media.get('bitDepth', 8) or 8)
-    except (TypeError, ValueError):
-        bit_depth = 8
+    stream = video_stream(media)
+    bit_depth = 8
+    for source in [media] if stream is None else [stream, media]:
+        try:
+            found = int(source.get('bitDepth') or 0)
+        except (TypeError, ValueError):
+            found = 0
+        if found:
+            bit_depth = found
+            break
+    else:
+        if '10' in str(media.get('videoProfile') or '').split():
+            bit_depth = 10  # old servers only report 'main 10'
+
+    codec = media.get('videoCodec')
 
     return {
         'bitrate': bitrate,
@@ -233,28 +432,18 @@ def media_details(media):
         'height': resolution_height(media.get('videoResolution')),
         'videoResolution': resolution_label(media.get('videoResolution')),
         'container': media.get('container', 'unknown'),
-        'codec': media.get('videoCodec'),
+        'codec': codec,
+        'codecLabel': VIDEO_NAMES.get((codec or '').lower(), (codec or '').upper()),
         'audio': audio_label(media),
         'audioCodec': media.get('audioCodec'),
         'audioChannels': media.get('audioChannels'),
-        'hdr': _is_hdr(media),
+        'languages': language_labels(media),
+        'subtitles': language_labels(media, stream_type='3'),
+        'source': source_label(media),
+        'size': media_size(media),
+        'hdr': hdr_label(media),
+        'edition': (item.get('editionTitle') or '') if item is not None else '',
     }
-
-
-def _is_hdr(media):
-    colour = '%s %s' % (media.get('videoProfile', ''), media.get('colorTrc', ''))
-    if any(marker in colour.lower() for marker in HDR_MARKERS):
-        return True
-
-    for stream in media.iter('Stream'):
-        if stream.get('streamType') != '1':
-            continue
-        colour = '%s %s %s' % (stream.get('colorTrc', ''), stream.get('DOVIProfile', ''),
-                               stream.get('colorPrimaries', ''))
-        if any(marker in colour.lower() for marker in HDR_MARKERS):
-            return True
-
-    return False
 
 
 def quality_score(details):
@@ -320,25 +509,57 @@ def part_index_for_media(details, media_index):
     return None
 
 
-def describe(details):
-    """One liner, e.g. '2160p HDR - Dolby TrueHD 7.1 (Atmos) - 30.0 Mb/s'."""
-    parts = []
+def dynamic_range(details):
+    """The HDR format, or 'SDR' for a video that carries none - a viewer should
+    not have to read the missing word."""
+    if not details.get('videoResolution') and not details.get('height'):
+        return ''  # nothing that has a picture
 
-    resolution = details.get('videoResolution')
-    if resolution:
-        parts.append('%s HDR' % resolution if details.get('hdr') else resolution)
-    elif details.get('hdr'):
-        parts.append('HDR')
+    return details.get('hdr') or 'SDR'
 
-    audio = details.get('audio')
-    if audio:
-        parts.append(audio)
+
+def describe_short(details):
+    """What a listing says about an item: the picture and the sound, e.g.
+    '4K · DV Profile 7 · Dolby TrueHD 7.1 (Atmos)'.  Where the file comes from
+    and how big it is belongs in the version dialog, not under every title."""
+    parts = [
+        details.get('videoResolution'),
+        dynamic_range(details),
+        details.get('audio'),
+        details.get('edition'),
+    ]
+
+    return ' · '.join([part for part in parts if part]) or i18n_or('Unknown', 'Unbekannt')
+
+
+def describe_file(details):
+    """What is left once the picture and the sound have been named: where the
+    file comes from, how it is encoded and how big it is - the things that tell
+    two copies of one title apart, e.g.
+    'Remux · H265 10 Bit · DE/EN · 74.5 Mb/s · 70.5 GB'."""
+    depth = details.get('bitDepth') or 8
+    video = ' '.join([part for part in [details.get('codecLabel'),
+                                        '%d Bit' % depth if depth > 8 else ''] if part])
 
     bitrate = details.get('bitrate')
-    if bitrate:
-        parts.append('%s Mb/s' % bitrate)
+    parts = [
+        details.get('source'),
+        video,
+        '/'.join(details.get('languages') or []),
+        '%s %s' % (bitrate, i18n_or('Mb/s', 'Mb/s')) if bitrate else '',
+        size_label(details.get('size') or 0),
+    ]
 
-    return ' - '.join(parts) or i18n_or('Unknown', 'Unbekannt')
+    return ' · '.join([part for part in parts if part])
+
+
+def describe(details):
+    """Everything in one line, e.g. '4K · DV Profile 7 · Dolby TrueHD 7.1
+    (Atmos) · Remux · H265 10 Bit · DE/EN · 74.5 Mb/s · 70.5 GB'.  Everything
+    the response did not carry is left out rather than guessed at."""
+    parts = [describe_short(details), describe_file(details)]
+
+    return ' · '.join([part for part in parts if part]) or i18n_or('Unknown', 'Unbekannt')
 
 
 class QualitySearch:
@@ -399,6 +620,9 @@ class QualitySearch:
     def _guid(self):
         return self.stream.get('extra', {}).get('guid')
 
+    def _show_guid(self):
+        return self.stream.get('extra', {}).get('show_guid')
+
     def _title(self):
         """Movie title; episodes are matched through their show instead."""
         full_data = self.stream.get('full_data', {})
@@ -446,6 +670,7 @@ class QualitySearch:
                 'details': details,
                 'server_uuid': self.server.get_uuid(),
                 'server_name': self.server.get_name(),
+                'library': self.stream.get('extra', {}).get('library') or '',
                 'media_id': self.media_id,
                 'local': True,
             })
@@ -496,10 +721,21 @@ class QualitySearch:
 
     def _lookup(self, server, results, lock):
         found = self._by_guid(server)
+        way = 'guid'
+
+        if not found:
+            # an episode is held as its own item per library, so the copy is
+            # reached through the show rather than through the episode guid
+            found = self._by_show_guid(server)
+            way = 'show guid'
+
         if not found:
             # libraries scanned with different agents do not share a guid, so
             # fall back to the title before giving up on this server
             found = self._by_title(server)
+            way = 'title'
+
+        LOG.debug('%s: %s version(s) found by %s' % (server.get_name(), len(found), way))
 
         if found:
             with lock:
@@ -517,11 +753,53 @@ class QualitySearch:
         if not guid:
             return []
 
-        tree = self._talk(server, '/library/all?guid=%s' % quote(guid, safe=''))
+        # /library/all searches what a library shows on its first page, so an
+        # episode has to be asked for as such or it is not found at all
+        wanted_type = '&type=4' if self._show() else ''
+
+        tree = self._talk(server, '/library/all?guid=%s%s' %
+                          (quote(guid, safe=''), wanted_type))
         if tree is None:
             return []
 
         return self._versions_from(server, tree.iter('Video'))
+
+    def _by_show_guid(self, server):
+        """Find the show by its guid, then the episode by its numbers.
+
+        Every library holds its own copy of a show, so the episode guid only
+        ever finds the item that is playing.  The guid of the show is the same
+        in every library that scanned it with the Plex agent, whatever title it
+        ended up with.
+        """
+        guid = self._show_guid()
+        wanted = self._show()
+        if not guid or not wanted:
+            return []
+
+        _, season, episode = wanted
+
+        tree = self._talk(server, '/library/all?type=2&guid=%s' % quote(guid, safe=''))
+        if tree is None:
+            return []
+
+        keys = []
+        for element in tree.iter():
+            if element.get('type') != 'show':
+                continue
+            rating_key = element.get('ratingKey')
+            if rating_key and rating_key not in keys:
+                keys.append(rating_key)
+
+        found = []
+        for rating_key in keys[:MAX_SHOWS]:
+            leaves = self._talk(server, '/library/metadata/%s/allLeaves' % rating_key)
+            if leaves is None:
+                continue
+
+            found += self._versions_from(server, self._episode_matches(leaves, season, episode))
+
+        return found
 
     def _by_title(self, server):
         title = self._title()
@@ -647,18 +925,26 @@ class QualitySearch:
     def _versions_from(self, server, videos):
         found = []
 
+        # a search answers without the streams below a Media, so the Dolby
+        # Vision profile would be missing on everything but the playing item
+        videos = list(videos)
+        attach_media_streams(server, videos)
+
         for video in videos:
             rating_key = video.get('ratingKey')
             if not rating_key or self._is_current_item(server, rating_key):
                 continue
 
+            library = self._library_of(server, video)
+
             for index, media in enumerate(video.iter('Media')):
                 found.append({
                     'part_index': None,  # resolved once the item is loaded
                     'media_index': index,
-                    'details': media_details(media),
+                    'details': media_details(media, video),
                     'server_uuid': server.get_uuid(),
                     'server_name': server.get_name(),
+                    'library': library,
                     'media_id': rating_key,
                     'local': False,
                 })
@@ -667,6 +953,25 @@ class QualitySearch:
                 break
 
         return found
+
+    @staticmethod
+    def _library_of(server, video):
+        """The library an item sits in.  Most responses name it on the item,
+        the rest at least carry its id."""
+        title = video.get('librarySectionTitle')
+        if title:
+            return title
+
+        section_id = video.get('librarySectionID')
+        if section_id:
+            try:
+                for section in server.get_sections():
+                    if str(section.get_key()) == str(section_id):
+                        return section.get_title()
+            except Exception as error:  # pylint: disable=broad-except
+                LOG.debug('Section lookup failed on %s: %s' % (server.get_name(), error))
+
+        return ''
 
     def _is_current_item(self, server, rating_key):
         return (server.get_uuid() == self.server.get_uuid() and
@@ -678,8 +983,11 @@ class QualitySearch:
 
         items = []
         for version in candidates:
-            item = xbmcgui.ListItem(label=describe(version['details']))
-            item.setLabel2(self._sub_label(version, current, multiple_servers))
+            # where the version sits and what it costs on top, with the same
+            # words the listings use below it
+            item = xbmcgui.ListItem(label=self._version_label(version, current,
+                                                              multiple_servers))
+            item.setLabel2(describe_short(version['details']))
             item.setArt({'icon': CONFIG['icon']})
             items.append(item)
 
@@ -695,17 +1003,19 @@ class QualitySearch:
         return chosen
 
     @staticmethod
-    def _sub_label(version, current, multiple_servers):
-        labels = []
+    def _version_label(version, current, multiple_servers):
+        """'Filme | 4K' - the library says which copy this is, so the old
+        'other library' note is not needed any more."""
+        parts = [
+            version.get('server_name') if multiple_servers else '',
+            version.get('library') or '',
+        ]
 
-        if multiple_servers:
-            labels.append(version['server_name'] or '')
+        label = ' · '.join([part for part in parts if part])
 
         if version is current:
-            labels.append(i18n_or('Current version', 'Aktuelle Version'))
-        elif version['server_uuid'] != current['server_uuid']:
-            labels.append(i18n_or('Other server', 'Anderer Server'))
-        elif str(version['media_id']) != str(current['media_id']):
-            labels.append(i18n_or('Other library', 'Andere Bibliothek'))
+            label = ' - '.join([part for part in
+                                [label, i18n_or('Current version', 'Aktuelle Version')]
+                                if part])
 
-        return ' - '.join([label for label in labels if label])
+        return label or describe_file(details) or i18n_or('Unknown', 'Unbekannt')

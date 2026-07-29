@@ -229,6 +229,7 @@ STRINGS = {
     'Other server': 30830,
     'Always show the version dialog': 30831,
     'Other library': 30832,
+    'Mb/s': 30833,
 }
 
 

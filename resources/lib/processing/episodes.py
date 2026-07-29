@@ -5,6 +5,7 @@ import xbmcplugin  # pylint: disable=import-error
 from core.common import get_handle
 from core.context import Item
 from core.logger import Logger
+from core.utils import attach_media_streams
 from core.utils import get_xml
 from gui.builders.episode import create_episode_item
 
@@ -42,7 +43,11 @@ def process_episodes(context, url, tree=None, rating_key=None, library=False):
 
     items = []
     append_item = items.append
-    episodes = tree.iter('Video')
+    episodes = list(tree.iter('Video'))
+
+    # a season fits in one lookup, so the flags say Dolby Vision Profile 7 and
+    # not just Dolby Vision
+    attach_media_streams(server, episodes)
 
     for episode in episodes:
         item = Item(server, url, tree, episode)

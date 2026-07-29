@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import xml.etree.ElementTree as ETree
 from urllib.parse import quote_plus
 
 from core.logger import Logger
+from playback.quality import describe_short
+from playback.quality import media_details
 
 LOG = Logger()
 
@@ -126,76 +129,20 @@ def get_fanart_image(context, server, data, width=1280, height=720):
     return ''
 
 
-def get_media_data(tag_dict):
+def get_media_data(tag_dict, media=None, item=None):
     """
         Extra the media info_labels from the XML
-        @input: dict of <media /> tag attributes
+        @input: dict of <media /> tag attributes, optionally the element itself
+                so the streams and parts below it can be read as well, and the
+                item it belongs to for the edition
         @output: dict of required values
     """
-    audio_codec_map = {
-        'aac': 'AAC',
-        'ac3': 'Dolby Digital',
-        'dca': 'DTS',
-        'dca-ma': 'DTS-HD MA',
-        'eac3': 'Dolby Digital+',
-        'mp2': 'MP2',
-        'mp3': 'MP3',
-        'flac': 'FLAC',
-        'pcm': 'PCM',
-        'truehd': 'Dolby TrueHD'
-    }
+    # the short line under a title, in the same words the version dialog uses
+    if media is None:
+        media = ETree.Element('Media', {key: str(value)
+                                        for key, value in tag_dict.items()})
 
-    video_codec_map = {
-        'av1': 'AV1',
-        'h264': 'H264',
-        'hevc': 'H265',
-        'mpeg2video': 'MPEG-2',
-        'mpeg4': 'MPEG-4',
-        'vc1': 'VC1'
-    }
-
-    resolution_map = {
-        'sd': 'SD',
-        '480': '480p',
-        '576': '576p',
-        '720': '720p',
-        '1080': '1080p',
-        '4k': '4K'
-    }
-
-    audio_channels_map = {
-        '1': '1.0',
-        '2': '2.0',
-        '3': '2.1',
-        '4': '4.0',
-        '5': '4.1',
-        '6': '5.1',
-        '7': '6.1',
-        '8': '7.1'
-    }
-
-    audio_channels_raw = tag_dict.get('audioChannels', '')
-    bitrate_raw = tag_dict.get('bitrate', '')
-    try:
-        bitrate_mbps = round(int(bitrate_raw) / 1000, 1)
-        bitrate = f"{bitrate_mbps} Mbps"
-    except (ValueError, TypeError):
-        bitrate = ''
-    codec_audio = tag_dict.get('audioCodec', '')
-    codec_video = tag_dict.get('videoCodec', '')
-    resolution_video = tag_dict.get('videoResolution', '')
-
-    default_channels = ('%s.0' % audio_channels_raw
-                        if audio_channels_raw.isdigit() else audio_channels_raw)
-    audio_channels = audio_channels_map.get(audio_channels_raw, default_channels)
-    codec_audio = audio_codec_map.get(codec_audio, codec_audio)
-    codec_video = video_codec_map.get(codec_video, codec_video)
-    resolution_video = resolution_map.get(resolution_video, resolution_video)
-
-    audio_full = f"{codec_audio} {audio_channels}".strip() if codec_audio or audio_channels else ''
-
-    codec_parts = [part for part in [resolution_video, codec_video, audio_full, bitrate] if part]
-    codec = " · ".join(codec_parts)
+    codec = describe_short(media_details(media, item))
 
     stream_info_video = {
         'codec': tag_dict.get('videoCodec', ''),
@@ -205,6 +152,9 @@ def get_media_data(tag_dict):
         'duration': int(tag_dict.get('duration', 0)) / 1000
     }
     stream_info_audio = {
+        # the description goes into the codec, the channel count stays out of
+        # it - players append it to the label and it is already in the audio
+        # part of the description
         'codec': codec,
         'channels': 0
     }
@@ -225,6 +175,7 @@ def get_media_data(tag_dict):
 def get_metadata(context, data):
     metadata = {
         'attributes': {},
+        'media': None,  # the element itself, for the streams below it
         'cast': [],
         'collections': [],
         'director': [],
@@ -235,6 +186,7 @@ def get_metadata(context, data):
     media_tag = data.find('Media')
     if media_tag is not None:
         metadata['attributes'] = dict(media_tag.items())
+        metadata['media'] = media_tag
 
     if not context.settings.skip_metadata():
         append_genre = metadata['genre'].append

@@ -7,6 +7,7 @@ import xbmcplugin  # pylint: disable=import-error
 from core.common import get_handle
 from core.context import Item
 from core.logger import Logger
+from core.utils import attach_media_streams
 from core.utils import get_xml
 from gui.builders.movie import create_movie_item
 from gui.builders.photo import create_photo_item
@@ -32,7 +33,13 @@ def process_movies(context, url, tree=None):
     start_time = time.time()
     items = []
     append_item = items.append
-    branches = tree.iter()
+    branches = list(tree.iter())
+
+    # a widget row or a collection fits in one lookup, so the flags say Dolby
+    # Vision Profile 7 and not just Dolby Vision; a whole library page is left
+    # alone by the lookup itself
+    attach_media_streams(server, [branch for branch in branches
+                                  if branch.tag.lower() == 'video'])
 
     for branch in branches:
         item = Item(server, url, tree, branch)

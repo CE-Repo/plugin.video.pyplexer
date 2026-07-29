@@ -6,6 +6,7 @@ import pickle
 import time
 from base64 import b64encode
 from binascii import hexlify
+from urllib.parse import urlencode
 
 import xbmc  # pylint: disable=import-error
 import xbmcgui  # pylint: disable=import-error
@@ -15,6 +16,16 @@ from core.logger import Logger
 from core.strings import i18n
 
 LOG = Logger()
+
+#: Items whose streams are fetched in one go; a whole library page is left
+#: alone, nobody compares five hundred titles at once.
+MAX_STREAM_LOOKUP = 30
+
+#: Everything the stream lookup does not need, kept out of the answer.
+SKIPPED_ELEMENTS = ('Genre', 'Country', 'Role', 'Writer', 'Director', 'Producer',
+                    'Collection', 'Rating', 'Review', 'Chapter', 'Similar',
+                    'Related', 'Extras', 'Preferences', 'Guid', 'Image',
+                    'UltraBlurColors', 'Marker')
 
 
 def get_xml(context, url, tree=None):
@@ -26,6 +37,68 @@ def get_xml(context, url, tree=None):
         return None
 
     return tree
+
+
+def attach_media_streams(server, elements):
+    """Fetch the streams of the given items and graft them onto their Media.
+
+    Plex answers a listing or a search with the attributes of a Media element
+    only - the streams below it live on the metadata of the item.  Without them
+    there is no Dolby Vision profile, no audio language and no subtitle list.
+    Several rating keys can be asked for at once, so a whole page costs one
+    request, and everything but the media data is left out of the answer.
+
+    The elements are changed in place; anything that goes wrong leaves them as
+    they were.
+    """
+    elements = [element for element in elements
+                if element.get('ratingKey') and element.find('Media') is not None]
+
+    if not elements or len(elements) > MAX_STREAM_LOOKUP:
+        return False
+
+    if all(element.find('.//Stream') is not None for element in elements):
+        return False  # the response already carries them
+
+    query = urlencode({
+        'excludeElements': ','.join(SKIPPED_ELEMENTS),
+        'excludeFields': 'summary,tagline',
+    })
+
+    try:
+        tree = server.processed_xml('/library/metadata/%s?%s' %
+                                    (','.join([element.get('ratingKey')
+                                               for element in elements]), query))
+    except Exception as error:  # pylint: disable=broad-except
+        LOG.debug('Stream lookup failed on %s: %s' % (server.get_name(), error))
+        return False
+
+    if tree is None:
+        return False
+
+    detailed = {}
+    for video in tree.iter('Video'):
+        rating_key = video.get('ratingKey')
+        if rating_key:
+            detailed[str(rating_key)] = video
+
+    grafted = 0
+    for element in elements:
+        video = detailed.get(str(element.get('ratingKey')))
+        if video is None or video.find('Media') is None:
+            continue
+
+        for media in element.findall('Media'):
+            element.remove(media)
+        for media in video.findall('Media'):
+            element.append(media)
+
+        grafted += 1
+
+    LOG.debug('Streams attached to %s of %s item(s) on %s' %
+              (grafted, len(elements), server.get_name()))
+
+    return grafted > 0
 
 
 def get_master_server(context, all_servers=False):

@@ -19,7 +19,7 @@
                           ],
     "play_episode"      : [
                             "plugin://plugin.video.pyplexer/?mode=32&video_type=episode&query={title_url}&showtitle={showname_url}&season={season}&episode={episode}",
-                            {"season": "{season}", "episode": "{episode}", "dialog": "auto"}
+                            {"dialog": "auto"}
                           ],
     "search_movie"      : [
                             "plugin://plugin.video.pyplexer/?mode=32&video_type=movie&query={title_url}&title={title_url}&originaltitle={originaltitle_url}&year={year}&premiered={premiered}",
@@ -27,6 +27,6 @@
                           ],
     "search_episode"    : [
                             "plugin://plugin.video.pyplexer/?mode=32&video_type=episode&query={title_url}&showtitle={showname_url}&season={season}&episode={episode}",
-                            {"season": "{season}", "episode": "{episode}", "dialog": "auto"}
+                            {"dialog": "auto"}
                           ]
 }

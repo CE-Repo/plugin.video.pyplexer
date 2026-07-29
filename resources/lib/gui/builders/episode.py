@@ -58,17 +58,29 @@ def create_episode_item(context, item, library=False):
                      context.settings.prefix_server_in_combined() and
                      not context.params.get('no_server_prefix'))
 
+    # a player builds its own '1x1.' out of the season and episode labels; it
+    # is told which episode this is through the title instead, so the two do
+    # not end up in front of each other
+    for_player = bool(context.params.get('player_labels'))
+
+    season = info_labels['season']
+    episode = info_labels['episode']
+
     if not library:
-        if prefix_sxee:
-            info_labels['title'] = '%sx%s %s' % \
-                                   (info_labels['season'],
-                                    str(info_labels['episode']).zfill(2), info_labels['title'])
-            if prefix_tvshow:
+        if prefix_sxee or for_player:
+            info_labels['title'] = 'S%s/E%s · %s' % (str(season).zfill(2),
+                                                     str(episode).zfill(2),
+                                                     info_labels['title'])
+            if prefix_tvshow and not for_player:
                 info_labels['title'] = '%s - %s' % \
                                        (info_labels['tvshowtitle'], info_labels['title'])
 
         if prefix_server:
             info_labels['title'] = '%s: %s' % (item.server.get_name(), info_labels['title'])
+
+    if for_player:
+        del info_labels['season']
+        del info_labels['episode']
 
     # Gather some data
     view_offset = item.data.get('viewOffset', 0)
@@ -90,7 +102,7 @@ def create_episode_item(context, item, library=False):
         'grandparentRatingKey': str(item.data.get('grandparentRatingKey', 0)),
         'duration': duration,
         'resume': int(int(view_offset) / 1000),
-        'season': info_labels.get('season'),
+        'season': season,
         'tvshowtitle': info_labels.get('tvshowtitle'),
         'additional_context_menus': {
             'go_to': item.url.endswith(('onDeck', 'recentlyAdded', 'recentlyViewed', 'newest'))
@@ -109,7 +121,8 @@ def create_episode_item(context, item, library=False):
 
     # Add extra media flag data
     if not context.settings.skip_flags():
-        extra_data.update(get_media_data(metadata['attributes']))
+        extra_data.update(get_media_data(metadata['attributes'], metadata.get('media'),
+                                         item.data))
 
     # Build any specific context menu entries
     context_menu = None

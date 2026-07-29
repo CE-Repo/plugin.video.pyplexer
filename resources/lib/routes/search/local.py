@@ -20,6 +20,7 @@ from core.context import Item
 from core.logger import Logger
 from core.strings import decode_utf8
 from core.strings import i18n
+from core.utils import attach_media_streams
 from gui.builders.episode import create_episode_item
 from gui.builders.movie import create_movie_item
 from playback.quality import media_details
@@ -51,6 +52,11 @@ def run(context):
         # the caller knows what it wants, so the server name must not end up
         # in the title where it would spoil the match
         params['no_server_prefix'] = True
+
+    if _from_player(params):
+        # a player writes the episode numbers in front of the label itself, so
+        # the item carries them in its title instead of in its labels
+        params['player_labels'] = True
 
     context.params = params
 
@@ -104,7 +110,7 @@ def search(context):
     if episode:
         results = _search_episode(context, episode)
         if results:
-            return _sort_results(context, results)
+            return _sort_results(context, _with_streams(context, results))
 
         LOG.debug('No exact episode match, falling back to the plain search')
 
@@ -117,7 +123,22 @@ def search(context):
     elif context.params.get('video_type') == 'episode':
         results = _refine_episodes(context, results)
 
-    return _sort_results(context, results)
+    return _sort_results(context, _with_streams(context, results))
+
+
+def _with_streams(context, results):
+    """The search answers with the Media attributes only, so the streams - and
+    with them the Dolby Vision profile, the audio languages and the subtitles -
+    are fetched for the handful of results a viewer chooses from."""
+    for server_uuid in {entry[0] for entry in results}:
+        server = context.plex_network.get_server_from_uuid(server_uuid)
+        if server is None:
+            continue
+
+        attach_media_streams(server, [entry[2] for entry in results
+                                      if entry[0] == server_uuid])
+
+    return results
 
 
 def _search_sections(context):
@@ -397,6 +418,13 @@ def _episode_wanted(params):
 
 def _is_precise(params):
     return bool(_wanted_year(params) or _episode_wanted(params))
+
+
+def _from_player(params):
+    """A player hands over what it already knows; the keyboard search only ever
+    has the term that was typed."""
+    return any(params.get(param) for param in
+               ['showtitle', 'season', 'episode', 'originaltitle', 'year', 'premiered'])
 
 
 def _as_int(value):

@@ -1694,3 +1694,7 @@ msgstr ""
 msgctxt "#30832"
 msgid "Other library"
 msgstr ""
+
+msgctxt "#30833"
+msgid "Mb/s"
+msgstr ""
