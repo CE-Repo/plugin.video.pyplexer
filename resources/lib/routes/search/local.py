@@ -59,7 +59,7 @@ def run(context):
     LOG.debug('Search: query=%s title=%s originaltitle=%s year=%s showtitle=%s '
               'season=%s episode=%s -> %s lookup' %
               (params.get('query'), params.get('title'), params.get('originaltitle'),
-               params.get('year'), params.get('showtitle'), params.get('season'),
+               _wanted_year(params), params.get('showtitle'), params.get('season'),
                params.get('episode'), 'exact' if _is_precise(params) else 'plain'))
 
     succeeded = False
@@ -114,6 +114,8 @@ def search(context):
     # search has to stay broad, it is a search after all
     if context.params.get('video_type') == 'movie' and _is_precise(context.params):
         results = _refine_movies(context, results)
+    elif context.params.get('video_type') == 'episode':
+        results = _refine_episodes(context, results)
 
     return _sort_results(context, results)
 
@@ -160,7 +162,7 @@ def _refine_movies(context, results):
     if not wanted:
         return results
 
-    year = _as_int(context.params.get('year'))
+    year = _wanted_year(context.params)
 
     exact = []
     close = []
@@ -185,6 +187,46 @@ def _refine_movies(context, results):
                   'the wrong film' % (wanted, year))
 
     # every copy of the right film is kept - a Full HD and a 4K item are two
+    # things to choose from, not a duplicate
+    return matches
+
+
+def _refine_episodes(context, results):
+    """Keep the episode the caller asked for and nothing else.  The fallback
+    searches for the episode title, and Plex answers 'Das Puzzle' with every
+    episode of that name from every show, so season and episode have to fit.
+
+    The show is only allowed to differ when no item carries the requested one,
+    because a library may hold the show under a localised name.
+    """
+    season = _as_int(context.params.get('season'))
+    episode = _as_int(context.params.get('episode'))
+    if season is None or episode is None:
+        return results  # the keyboard search has to stay broad
+
+    show = normalise_title(context.params.get('showtitle'))
+
+    exact = []
+    close = []
+
+    for entry in results:
+        element = entry[2]
+
+        if (_as_int(element.get('parentIndex')) != season or
+                _as_int(element.get('index')) != episode):
+            continue
+
+        if show and normalise_title(element.get('grandparentTitle')) == show:
+            exact.append(entry)
+        else:
+            close.append(entry)
+
+    matches = exact or close
+    if not matches:
+        LOG.debug('No item matches %s S%sE%s, the caller gets nothing rather '
+                  'than the wrong episode' % (show or '?', season, episode))
+
+    # every copy of the right episode is kept - a Full HD and a 4K item are two
     # things to choose from, not a duplicate
     return matches
 
@@ -238,6 +280,18 @@ def _wanted_titles(params):
     return titles
 
 
+def _wanted_year(params):
+    """The year the caller asked for.  Players do not all fill ``year``; some
+    only hand over the release date, and one that names neither gets no year at
+    all rather than a guess."""
+    year = _as_int(params.get('year'))
+    if year:
+        return year
+
+    premiered = params.get('premiered') or params.get('release_date') or ''
+    return _as_int(str(premiered)[:4])
+
+
 def _sort_results(context, results):
     """Newest first, with the closest match on top: what the caller asked for
     should not sit below a namesake from twenty years ago.  Copies of one film
@@ -255,7 +309,7 @@ def _sort_results(context, results):
         return sorted(results,
                       key=lambda entry: _episode_order(entry[2], wanted, show, numbers))
 
-    year = _as_int(context.params.get('year'))
+    year = _wanted_year(context.params)
 
     return sorted(results, key=lambda entry: _movie_order(entry[2], wanted, year))
 
@@ -342,7 +396,7 @@ def _episode_wanted(params):
 
 
 def _is_precise(params):
-    return bool(params.get('year') or _episode_wanted(params))
+    return bool(_wanted_year(params) or _episode_wanted(params))
 
 
 def _as_int(value):
