@@ -50,12 +50,53 @@ def watchlist_remove(context):
     _watchlist_action(context, add=False)
 
 
+def watchlist_toggle_external(context):
+    """Toggle the focused TMDb Helper movie/show in the Plex Watchlist."""
+    context.plex_network = Plex(context.settings, load=False)
+    if not context.plex_network.is_myplex_signedin():
+        xbmcgui.Dialog().notification(heading=CONFIG['name'],
+                                      message=i18n('myPlex not configured'),
+                                      icon=CONFIG['icon'])
+        return
+
+    argv = get_argv()
+    media_type = argv[2].strip() if len(argv) > 2 else None
+    external_guid = argv[3].strip() if len(argv) > 3 else None
+
+    rating_key = context.plex_network.resolve_provider_rating_key(external_guid, media_type)
+    if not rating_key:
+        message = i18n_or('Plex could not match this title',
+                          'Plex konnte diesen Titel nicht zuordnen')
+        xbmcgui.Dialog().notification(heading=CONFIG['name'], message=message,
+                                      icon=CONFIG['icon'])
+        return
+
+    watchlisted = context.plex_network.is_provider_watchlisted(rating_key)
+    if watchlisted is None:
+        success = False
+        add = False
+    else:
+        add = not watchlisted
+        success = context.plex_network.provider_watchlist_action(add, rating_key)
+
+    _watchlist_result(success, add)
+    if success:
+        xbmc.executebuiltin('Container.Refresh')
+
+
 def _watchlist_action(context, add):
     context.plex_network = Plex(context.settings, load=False)
 
     argv = get_argv()
     rating_key = argv[2] if len(argv) > 2 else None
     success = context.plex_network.provider_watchlist_action(add, rating_key)
+
+    _watchlist_result(success, add)
+    xbmc.executebuiltin('Container.Refresh')
+
+
+def _watchlist_result(success, add):
+    """Show the localized result shared by direct and external actions."""
 
     if success and add:
         message = i18n_or('Added to Watchlist', 'Zur Merkliste hinzugefügt')
@@ -66,7 +107,6 @@ def _watchlist_action(context, add):
                           'Merkliste konnte nicht aktualisiert werden')
 
     xbmcgui.Dialog().notification(heading=CONFIG['name'], message=message, icon=CONFIG['icon'])
-    xbmc.executebuiltin('Container.Refresh')
 
 
 def discover(context):

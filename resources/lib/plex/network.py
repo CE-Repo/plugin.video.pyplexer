@@ -5,6 +5,7 @@ import hashlib
 import socket
 import traceback
 import xml.etree.ElementTree as ETree
+from urllib.parse import urlencode
 from urllib.parse import urlparse
 
 import requests
@@ -610,6 +611,60 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
             (rating_keys, wanted))
 
         return self._parse_provider_xml(data)
+
+    def resolve_provider_rating_key(self, external_guid, media_type):
+        """Resolve a TMDb/IMDb/TVDb guid to a Plex Discover rating key.
+
+        Plex's Watchlist actions do not accept external ids. The matches
+        endpoint translates them to the global provider rating key. Supplying
+        the media type is essential because TMDb movie and show ids share the
+        same numeric namespace.
+        """
+        external_guid = str(external_guid or '').strip()
+        media_type = str(media_type or '').strip().lower()
+        plex_type = {'movie': 1, 'show': 2}.get(media_type)
+        if not plex_type or not external_guid:
+            return None
+
+        path = '/library/metadata/matches?%s' % urlencode({
+            'type': plex_type,
+            'guid': external_guid,
+        })
+        tree = self._parse_provider_xml(self.talk_to_provider(PROVIDER_METADATA, path))
+        if tree is None:
+            return None
+
+        for element in tree.iter():
+            rating_key = element.get('ratingKey')
+            if rating_key:
+                LOG.debug('Provider match %s -> ratingKey %s' %
+                          (external_guid, rating_key))
+                return rating_key
+
+        LOG.debug('No provider match for %s (%s)' % (external_guid, media_type))
+        return None
+
+    def is_provider_watchlisted(self, rating_key):
+        """Return whether a global provider rating key is on the Watchlist.
+
+        ``None`` means the Watchlist request failed; callers must not guess an
+        action in that case because doing so could remove or add unexpectedly.
+        """
+        if not rating_key:
+            return None
+
+        tree = self.get_watchlist()
+        if tree is None:
+            return None
+
+        wanted = str(rating_key)
+        for element in tree.iter():
+            candidate = element.get('ratingKey')
+            guid = element.get('guid') or ''
+            if str(candidate or '') == wanted or guid.rsplit('/', 1)[-1] == wanted:
+                return True
+
+        return False
 
     def get_discover_hubs(self):
         """The account-level Plex Discover feed."""

@@ -1693,6 +1693,18 @@ msgctxt "#30833"
 msgid "Mb/s"
 msgstr "Mb/s"
 
+msgctxt "#30834"
+msgid "Add/remove from Plex Watchlist"
+msgstr "Plex-Merkliste hinzufügen/entfernen"
+
+msgctxt "#30835"
+msgid "Could not identify this title"
+msgstr "Dieser Titel konnte nicht erkannt werden"
+
+msgctxt "#30836"
+msgid "Plex could not match this title"
+msgstr "Plex konnte diesen Titel nicht zuordnen"
+
 #~ msgctxt "#30689"
 #~ msgid "Up Next requires Kodi 18 or higher"
 #~ msgstr "‚Up Next‘ benötigt Kodi 18 oder höher"

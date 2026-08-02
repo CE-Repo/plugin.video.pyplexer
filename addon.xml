@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.pyplexer" name="PyPlexer" version="2.1.5" provider-name="jamal2362">
+<addon id="plugin.video.pyplexer" name="PyPlexer" version="2.1.6" provider-name="jamal2362">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests" version="2.12.4"/>
@@ -31,6 +31,11 @@
                     <!-- Mark as unwatched -->
                     <label>30793</label>
                     <visible>[Window.IsActive(10000) | Window.IsActive(10025)] + String.IsEmpty(Container.PluginName) + String.StartsWith(ListItem.FileNameAndPath,plugin://plugin.video.pyplexer/) + [String.IsEqual(ListItem.DBTYPE,video) | String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,episode)]</visible>
+                </item>
+                <item library="resources/lib/context_actions/toggle_watchlist.py">
+                    <!-- Add to / remove from the Plex Watchlist -->
+                    <label>30834</label>
+                    <visible>[Window.IsActive(10000) | Window.IsActive(10025)] + [String.IsEqual(Container.PluginName,plugin.video.themoviedb.helper) | String.StartsWith(ListItem.FileNameAndPath,plugin://plugin.video.themoviedb.helper/) | !String.IsEmpty(ListItem.UniqueID(tmdb)) | !String.IsEmpty(ListItem.Property(tmdb_id))] + [String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow)]</visible>
                 </item>
             </menu>
         </menu>

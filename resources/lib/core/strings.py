@@ -230,6 +230,9 @@ STRINGS = {
     'Always show the version dialog': 30831,
     'Other library': 30832,
     'Mb/s': 30833,
+    'Add/remove from Plex Watchlist': 30834,
+    'Could not identify this title': 30835,
+    'Plex could not match this title': 30836,
 }
 
 
