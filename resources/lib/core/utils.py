@@ -123,7 +123,7 @@ def get_master_server(context, all_servers=False):
     if len(possible_servers) > 1:
         preferred = 'local'
         for server_data in possible_servers:
-            if server_data.get_name == current_master:
+            if server_data.get_name() == current_master:
                 LOG.debug('Returning current master')
                 return server_data
             if preferred == 'any':

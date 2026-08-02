@@ -46,6 +46,22 @@ class Logger:
     ip_dom_regex = re.compile(r'-\d{1,3}-\d{1,3}-')
     user_regex = re.compile(r'-User=[a-zA-Z0-9|\-_]+([\s&|\'"])+')
     user2_regex = re.compile(r'-User=[a-zA-Z0-9|\-_]+$')
+    token_query_regex = re.compile(
+        r'(?i)(X-Plex-Token\s*=\s*)[^&\s\'"<>]+'
+    )
+    token_mapping_regex = re.compile(
+        r'(?i)([\'\"]?X-Plex-Token[\'\"]?\s*:\s*[\'\"])[^\'\"]+'
+    )
+    token_xml_regex = re.compile(
+        r'(?is)(<(?:authentication-token|auth_token)>)[^<]*(</(?:authentication-token|auth_token)>)'
+    )
+    access_token_value_regex = re.compile(
+        r'(?i)(accessToken\s*[=:]\s*[\'\"]?)[^\s,}\'\"&<>]+'
+    )
+    authorization_regex = re.compile(
+        r'(?i)([\'\"]?Authorization[\'\"]?\s*:\s*[\'\"]?(?:Basic|Bearer)\s+)[^\s,}\'\"]+'
+    )
+    temp_token_regex = re.compile(r'(?i)(Temp token is:\s*)\S+')
 
     def __init__(self, sub=None):
 
@@ -115,6 +131,20 @@ class Logger:
 
         return msg
 
+    def _redact_secrets(self, msg):
+        """Mask credentials even when optional privacy filtering is disabled."""
+        try:
+            msg = self.token_query_regex.sub(r'\g<1>XXXXXXXXXX', msg)
+            msg = self.token_mapping_regex.sub(r'\g<1>XXXXXXXXXX', msg)
+            msg = self.token_xml_regex.sub(r'\g<1>XXXXXXXXXX\g<2>', msg)
+            msg = self.access_token_value_regex.sub(r'\g<1>XXXXXXXXXX', msg)
+            msg = self.authorization_regex.sub(r'\g<1>XXXXXXXXXX', msg)
+            msg = self.temp_token_regex.sub(r'\g<1>XXXXXXXXXX', msg)
+        except Exception:  # pylint: disable=broad-except
+            return 'Logging failure:\n%s' % traceback.format_exc()
+
+        return msg
+
     def __print_message(self, msg, level=0, no_privacy=False):
         # bail out before doing any formatting or redaction work
         if not self._enabled(level):
@@ -128,6 +158,8 @@ class Logger:
             except Exception:  # pylint: disable=broad-except
                 level = self.LOG_ERROR
                 msg = 'Logging failed to coerce \'%s\' message' % type(msg)
+
+        msg = self._redact_secrets(msg)
 
         if self.privacy and not no_privacy:
             msg = self._redact(msg)

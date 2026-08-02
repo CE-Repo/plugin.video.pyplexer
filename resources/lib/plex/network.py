@@ -17,11 +17,17 @@ from core.server_config import ServerConfigStore
 from core.strings import i18n
 from gui.dialogs.progress import ProgressDialog
 from plex.discovery import PlexGDM
+from plex.http import ACCOUNT_TIMEOUT
+from plex.http import DIRECT_TIMEOUT
+from plex.http import SIGN_IN_TIMEOUT
+from plex.http import request as http_request
 from plex.identity import METADATA_LANGUAGE_PROPERTY
 from plex.identity import create_plex_identification
 from plex.identity import get_client_identifier
 from plex.section import PlexSection
 from plex.server import PlexMediaServer
+from plex.url import format_netloc
+from plex.url import split_netloc
 from storage.http_cache import CacheControl
 
 DEFAULT_PORT = '32400'
@@ -37,6 +43,14 @@ PROVIDER_DISCOVER = 'https://discover.provider.plex.tv'
 #: answers with what it considers a container, so the pages are counted through.
 WATCHLIST_PAGE_SIZE = 100
 MAX_WATCHLIST_ITEMS = 2000
+
+
+def _avatar_url(avatar):
+    """Return a Kodi-friendly avatar URL, tolerating accounts without one."""
+    avatar = avatar or ''
+    if avatar.startswith('https://plex.tv') or avatar.startswith('http://plex.tv'):
+        return avatar.replace('//', '//i2.wp.com/', 1)
+    return avatar
 
 
 class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attributes
@@ -130,10 +144,15 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
         LOG.debugplus('Temp token is: %s' % temp_token)
 
         if temp_token:
-            response = requests.get('%s/users/account?X-Plex-Token=%s' %
-                                    (self.myplex_server, temp_token),
-                                    headers=self.plex_identification_header(),
-                                    timeout=120)
+            try:
+                response = http_request(
+                    'get', '%s/users/account' % self.myplex_server,
+                    params={'X-Plex-Token': temp_token},
+                    headers=self.plex_identification_header(),
+                    timeout=SIGN_IN_TIMEOUT)
+            except requests.exceptions.RequestException as error:
+                LOG.error('PIN sign in status request failed: %s' % error)
+                return False
             response.encoding = 'utf-8'
 
             LOG.debug('Status Code: %s' % response.status_code)
@@ -146,11 +165,8 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
 
                     home = xml.get('home', '0')
                     username = xml.get('username', '')
-                    avatar = xml.get('thumb')
-
-                    if avatar.startswith('https://plex.tv') or avatar.startswith('http://plex.tv'):
-                        avatar = avatar.replace('//', '//i2.wp.com/', 1)
-                    self.plexhome_settings['plexhome_user_avatar'] = avatar
+                    self.plexhome_settings['plexhome_user_avatar'] = \
+                        _avatar_url(xml.get('thumb'))
 
                     if home == '1':
                         self.plexhome_settings['plexhome_enabled'] = True
@@ -299,8 +315,13 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
         return self.server_list.values()
 
     def talk_direct_to_server(self, ip_address='localhost', port=DEFAULT_PORT, url=None):
-        response = requests.get('http://%s:%s%s' % (ip_address, port, url),
-                                params=self.plex_identification_header(), timeout=2)
+        uri = 'http://%s%s' % (format_netloc(ip_address, port), url or '')
+        try:
+            response = http_request('get', uri, params=self.plex_identification_header(),
+                                    timeout=DIRECT_TIMEOUT)
+        except requests.exceptions.RequestException as error:
+            LOG.debug('Direct server request failed for %s: %s' % (uri, error))
+            return ''
         response.encoding = 'utf-8'
 
         LOG.debug('URL was: %s' % response.url)
@@ -498,9 +519,9 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
         LOG.debug('provider url = %s' % url)
 
         try:
-            response = requests.get(url, params=self.plex_identification_header(),
+            response = http_request('get', url, params=self.plex_identification_header(),
                                     headers={'Accept': 'application/xml'},
-                                    verify=True, timeout=(3, 20))
+                                    verify=True, timeout=ACCOUNT_TIMEOUT)
         except requests.exceptions.RequestException as error:
             LOG.error('provider request failed for %s: %s' % (url, error))
             return None
@@ -613,7 +634,8 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
             LOG.debug('Watchlist action %s at %s for ratingKey %s' %
                       (action, base, rating_key))
             try:
-                response = requests.put(url, params=params, verify=True, timeout=(3, 20))
+                response = http_request('put', url, params=params, verify=True,
+                                        timeout=ACCOUNT_TIMEOUT)
             except requests.exceptions.RequestException as error:
                 LOG.error('Watchlist action failed at %s: %s' % (base, error))
                 continue
@@ -720,14 +742,14 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
     def _request(self, path, method, use_params):
         try:
             if use_params:
-                response = getattr(requests, method)('%s%s' % (self.myplex_server, path),
-                                                     params=self.plex_identification_header(),
-                                                     verify=True, timeout=(3, 10))
+                response = http_request(method, '%s%s' % (self.myplex_server, path),
+                                        params=self.plex_identification_header(),
+                                        verify=True, timeout=ACCOUNT_TIMEOUT)
             else:
-                response = getattr(requests, method)('%s%s' % (self.myplex_server, path),
-                                                     headers=self.plex_identification_header(),
-                                                     verify=True, timeout=(3, 10))
-        except AttributeError:
+                response = http_request(method, '%s%s' % (self.myplex_server, path),
+                                        headers=self.plex_identification_header(),
+                                        verify=True, timeout=ACCOUNT_TIMEOUT)
+        except ValueError:
             LOG.error('Unknown HTTP method requested: %s' % method)
             response = None
 
@@ -737,6 +759,10 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
         return response
 
     def talk_to_myplex(self, path, renew=False, method='get'):
+        # ``renew`` is retained for callers using the old signature. Plex
+        # tokens cannot be refreshed without credentials, so a 401 is returned
+        # as unauthorized instead of repeating the identical request.
+        _ = renew
         LOG.debug('url = %s%s' % (self.myplex_server, path))
 
         use_params = method == 'get'
@@ -745,27 +771,23 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
         try:  # pylint: disable=no-else-return
             response = self._request(path, method, use_params=use_params)
 
-        except requests.exceptions.ConnectionError as error:
-            LOG.error('myPlex: %s is offline or unreachable. error: %s' %
-                      (self.myplex_server, error))
-            return '<?xml version="1.0" encoding="UTF-8"?><message status="error"></message>'
-
-        except requests.exceptions.ReadTimeout:
-            LOG.debug('myPlex: read timeout for %s on %s ' % (self.myplex_server, path))
+        except requests.exceptions.RequestException as error:
+            LOG.error('myPlex request failed for %s on %s: %s' %
+                      (self.myplex_server, path, error))
             return '<?xml version="1.0" encoding="UTF-8"?><message status="error"></message>'
 
         else:
+            if response is None:
+                return '<?xml version="1.0" encoding="UTF-8"?>' \
+                       '<message status="error"></message>'
             LOG.debugplus('Full URL was: %s' % response.url)
             LOG.debugplus('Full header sent was: %s' % response.request.headers)
             LOG.debugplus('Full header received was: %s' % response.headers)
 
-            if response.status_code == 401 and not renew:
-                return self.talk_to_myplex(path, True)
-
             if response.status_code >= 400:
                 error = 'HTTP response error: %s' % response.status_code
                 LOG.error(error)
-                if response.status_code == 404:
+                if response.status_code in (401, 403, 404):
                     return '<?xml version="1.0" encoding="UTF-8"?>' \
                            '<message status="unauthorized">' \
                            '</message>'
@@ -806,9 +828,14 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
             'Authorization': 'Basic %s' % base64string
         }
 
-        response = requests.post('%s/users/sign_in.xml' % self.myplex_server,
-                                 headers=dict(self.plex_identification_header(), **myplex_headers),
-                                 timeout=120)
+        try:
+            response = http_request(
+                'post', '%s/users/sign_in.xml' % self.myplex_server,
+                headers=dict(self.plex_identification_header(), **myplex_headers),
+                verify=True, timeout=SIGN_IN_TIMEOUT)
+        except requests.exceptions.RequestException as error:
+            LOG.error('myPlex sign in request failed: %s' % error)
+            return None
         response.encoding = 'utf-8'
 
         if response.status_code == 201:
@@ -818,13 +845,8 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
                 xml = ETree.fromstring(response.text)
                 home = xml.get('home', '0')
 
-                avatar = xml.get('thumb')
-                # Required because plex.tv doesn't return content-length and
-                # KODI requires it for cache
-                # fixed in KODI 15 (isengard)
-                if avatar.startswith('https://plex.tv') or avatar.startswith('http://plex.tv'):
-                    avatar = avatar.replace('//', '//i2.wp.com/', 1)
-                self.plexhome_settings['plexhome_user_avatar'] = avatar
+                self.plexhome_settings['plexhome_user_avatar'] = \
+                    _avatar_url(xml.get('thumb'))
 
                 if home == '1':
                     self.plexhome_settings['plexhome_enabled'] = True
@@ -849,10 +871,7 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
     def get_server_from_parts(self, scheme, uri):
         LOG.debug('IP to lookup: %s' % uri)
 
-        port = None
-        if ':' in uri.split('@')[-1]:
-            # We probably have an address:port being passed
-            uri, port = uri.split(':')
+        uri, port = split_netloc(uri)
 
         if is_ip(uri):
             LOG.debug('IP address detected - passing through')
@@ -959,12 +978,7 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
                 username = users['title']
                 break
 
-        avatar = tree.get('thumb')
-        # Required because plex.tv doesn't return content-length and KODI requires it for cache
-        # fixed in KODI 15 (isengard)
-        if avatar.startswith('https://plex.tv') or avatar.startswith('http://plex.tv'):
-            avatar = avatar.replace('//', '//i2.wp.com/', 1)
-        self.plexhome_settings['plexhome_user_avatar'] = avatar
+        self.plexhome_settings['plexhome_user_avatar'] = _avatar_url(tree.get('thumb'))
 
         token = tree.findtext('authentication-token')
         self.plexhome_settings['plexhome_user_cache'] = '%s|%s' % (username, token)

@@ -87,14 +87,22 @@ class ServerManager:
                 log_secure = 'Not Secure'
                 secure_label = i18n(log_secure)
 
-            device_dump = deepcopy(server.__dict__)
+            # ``settings`` may contain xbmcaddon.Addon, which cannot be copied
+            # or JSON-encoded. It is runtime state and provides no useful
+            # information in the server diagnostics dump.
+            device_dump = deepcopy({key: value for key, value in server.__dict__.items()
+                                    if key != 'settings'})
+            device_dump['token'] = 'XXXXXXXXXX'
+            headers = device_dump.get('plex_identification_header')
+            if isinstance(headers, dict):
+                headers['X-Plex-Token'] = 'XXXXXXXXXX'
             if self.context.settings.privacy():
-                device_dump['token'] = 'XXXXXXXXXX'
-                device_dump['plex_identification_header']['X-Plex-Token'] = 'XXXXXXXXXX'
-                device_dump['plex_identification_header']['X-Plex-User'] = 'XXXXXXX'
+                if isinstance(headers, dict):
+                    headers['X-Plex-User'] = 'XXXXXXX'
 
             LOG.debug('Device: %s [%s] [%s]' % (name, log_status, log_secure))
-            LOG.debugplus('Full device dump [%s]' % json.dumps(device_dump, indent=4))
+            LOG.debugplus('Full device dump [%s]' %
+                          json.dumps(device_dump, indent=4, default=str))
 
             server_label = '%s [%s] [%s]' % (name, status_label, secure_label)
             if name == self.master:

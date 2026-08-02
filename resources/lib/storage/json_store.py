@@ -2,6 +2,7 @@
 
 import json
 import os
+import uuid
 from copy import deepcopy
 
 import xbmcvfs  # pylint: disable=import-error
@@ -27,20 +28,32 @@ class JSONStore:
 
     def save(self, data):
         if data == self._data:
-            return
+            return True
 
-        self._data = deepcopy(data)
+        new_data = deepcopy(data)
 
         if not xbmcvfs.exists(self.base_path) and not self.make_dirs(self.base_path):
             LOG.debug('JSONStore Save |%s| failed to create directories.' % self.filename)
-            return
+            return False
 
         LOG.debug('JSONStore Save |%s|' % self.filename)
+        temporary_filename = '%s.%s.tmp' % (self.filename, uuid.uuid4().hex)
         try:
-            with open(self.filename, 'w', encoding='utf-8') as jsonfile:
-                json.dump(self._data, jsonfile, indent=4, sort_keys=True)
-        except OSError as error:
+            with open(temporary_filename, 'w', encoding='utf-8') as jsonfile:
+                json.dump(new_data, jsonfile, indent=4, sort_keys=True)
+                jsonfile.flush()
+            os.replace(temporary_filename, self.filename)
+        except (OSError, TypeError, ValueError) as error:
             LOG.error('JSONStore Save |%s| failed: %s' % (self.filename, error))
+            if temporary_filename and os.path.exists(temporary_filename):
+                try:
+                    os.remove(temporary_filename)
+                except OSError:
+                    pass
+            return False
+
+        self._data = new_data
+        return True
 
     def load(self):
         if not xbmcvfs.exists(self.filename):

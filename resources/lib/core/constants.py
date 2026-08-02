@@ -137,7 +137,8 @@ CONFIG = {
     'version': __ADDON.getAddonInfo('version'),
     'media_path': 'special://home/addons/%s/resources/media/' % __ADDON.getAddonInfo('id'),
     'temp_path': xbmcvfs.translatePath('special://temp/%s/' % __ADDON.getAddonInfo('id')),
-    'required_revision': '1.0.7'
+    # Address serialization now normalizes IPv6 network locations.
+    'required_revision': '1.0.8'
 }
 
 try:

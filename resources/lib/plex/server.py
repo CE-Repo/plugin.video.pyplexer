@@ -21,7 +21,13 @@ from core.settings import AddonSettings
 from plex.identity import create_plex_identification
 from plex.identity import get_client_identifier
 from plex.identity import get_device_name
+from plex.http import CONNECTION_TEST_TIMEOUT
+from plex.http import SERVER_TIMEOUT
+from plex.http import request as http_request
 from plex.section import PlexSection
+from plex.url import ensure_netloc
+from plex.url import format_netloc
+from plex.url import split_netloc
 from storage.data_cache import DATA_CACHE
 
 DEFAULT_PORT = '32400'
@@ -49,17 +55,18 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
         self.local_address_uri = []
 
         if self.discovery == 'myplex':
-            self.external_address = '%s:%s' % (address, port)
+            self.external_address = format_netloc(address, port)
             self.external_address_uri = None
         elif self.discovery == 'discovery':
-            self.local_address = ['%s:%s' % (address, port)]
+            self.local_address = [format_netloc(address, port)]
             self.local_address_uri = [None]
 
         self.custom_access_urls = []
 
-        self.access_address = '%s:%s' % (address, port)
+        self.access_address = format_netloc(address, port)
         self.access_path = '/'
-        self.access_uri = '%s://%s:%s%s' % (self.protocol, address, port, self.access_path)
+        self.access_uri = ('%s://%s%s' % (self.protocol, self.access_address, self.access_path)
+                           if self.access_address else '')
 
         self._ssl_certificate_verification = True
 
@@ -79,6 +86,12 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
         self.plex_identification_header = None
         self.plex_identification_string = None
         self.update_identification()
+
+    def __getstate__(self):
+        """Exclude Kodi's non-picklable settings handle from cached servers."""
+        state = self.__dict__.copy()
+        state['settings'] = None
+        return state
 
     def get_settings(self):
         if not self.settings:
@@ -153,13 +166,13 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
         return self.server_name
 
     def get_address(self):
-        return self.access_address.split('@')[-1].split(':')[0]
+        host, _ = split_netloc(self.access_address)
+        return host
 
     def get_port(self):
-        split_address = self.access_address.split('@')[-1].split(':')
-
-        if isinstance(split_address, list) and len(split_address) == 2:
-            return self.access_address.split('@')[-1].split(':')[-1]
+        _, port = split_netloc(self.access_address)
+        if port:
+            return str(port)
 
         if self.access_uri.startswith('https'):
             return '443'
@@ -195,22 +208,22 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
 
         LOG.debug('Checking [%s://%s%s] against [%s]' %
                   (scheme, ipaddress, '' if not port else ':' + port, self.access_uri))
-        uri = '%s://%s' % (scheme, ipaddress)
-        uri += ':' + port if port else ''
+        address = format_netloc(ipaddress, port)
+        uri = '%s://%s' % (scheme, address)
         if self.access_uri.startswith(uri) and uri.count(':') == self.access_uri.count(':'):
             return True
 
         LOG.debug('Checking [%s:%s] against [%s]' % (ipaddress, port, self.access_address))
-        if '%s:%s' % (ipaddress, port) == self.access_address:
+        if address == self.access_address:
             return True
 
         LOG.debug('Checking [%s:%s] against [%s]' % (ipaddress, port, self.external_address))
-        if '%s:%s' % (ipaddress, port) == self.external_address:
+        if address == self.external_address:
             return True
 
         for test_address in self.local_address:
-            LOG.debug('Checking [%s:%s] against [%s:%s]' % (ipaddress, port, ipaddress, 32400))
-            if '%s:%s' % (ipaddress, port) == '%s:%s' % (test_address, 32400):
+            LOG.debug('Checking [%s] against [%s]' % (address, test_address))
+            if address == ensure_netloc(test_address, DEFAULT_PORT):
                 return True
 
         return False
@@ -265,12 +278,13 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
         self.plex_home_enabled = False
 
     def add_external_connection(self, address, port, uri):
-        self.external_address = '%s:%s' % (address, port)
+        self.external_address = format_netloc(address, port)
         self.external_address_uri = uri
 
     def add_internal_connection(self, address, port, uri):
-        if '%s:%s' % (address, port) not in self.local_address:
-            self.local_address.append('%s:%s' % (address, port))
+        address = format_netloc(address, port)
+        if address not in self.local_address:
+            self.local_address.append(address)
             self.local_address_uri.append(uri)
 
     def add_custom_access_urls(self, addresses):
@@ -294,16 +308,18 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
                     self.connection_test_results.append((tag, url_parts.scheme, url_parts.netloc,
                                                          url_parts.path, uri, False))
                     return
-            response = requests.get(uri, params=self.plex_identification_header,
-                                    verify=self.ssl_certificate_verification, timeout=(2, 60))
+            response = http_request('get', uri, params=self.plex_identification_header,
+                                    verify=self.ssl_certificate_verification,
+                                    timeout=CONNECTION_TEST_TIMEOUT)
             status_code = response.status_code
             LOG.debug('[%s] Head status |%s| -> |%s|' % (self.uuid, uri, str(status_code)))
             if status_code in [requests.codes.ok, requests.codes.unauthorized]:  # pylint: disable=no-member
                 self.connection_test_results.append((tag, url_parts.scheme, url_parts.netloc,
                                                      url_parts.path, uri, True))
                 return
-        except Exception:  # pylint: disable=broad-except
-            pass
+        except requests.exceptions.RequestException as error:
+            LOG.debug('[%s] Connection test failed for |%s|: %s' %
+                      (self.uuid, uri, error))
         LOG.debug('[%s] Head status |%s| -> |%s|' % (self.uuid, uri, str(status_code)))
         self.connection_test_results.append((tag, url_parts.scheme, url_parts.netloc,
                                              url_parts.path, uri, False))
@@ -314,8 +330,7 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
         external_address = ''
 
         if address:
-            if ':' not in address.split('@')[-1]:
-                address = '%s:%s' % (address, DEFAULT_PORT)
+            address = ensure_netloc(address, DEFAULT_PORT)
         else:
             if self.external_address_uri:
                 url_parts = urlparse(self.external_address_uri)
@@ -326,12 +341,12 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
                 external_address = self.external_address
 
             # Ensure that ipaddress comes in an ip:port format
-            if external_uri and ':' not in external_uri:
-                external_uri = '%s:%s' % (external_uri, DEFAULT_PORT)
-            if internal_address and ':' not in internal_address:
-                internal_address = '%s:%s' % (internal_address, DEFAULT_PORT)
-            if external_address and ':' not in external_address:
-                external_address = '%s:%s' % (external_address, DEFAULT_PORT)
+            if external_uri:
+                external_uri = ensure_netloc(external_uri, DEFAULT_PORT)
+            if internal_address:
+                internal_address = ensure_netloc(internal_address, DEFAULT_PORT)
+            if external_address:
+                external_address = ensure_netloc(external_address, DEFAULT_PORT)
 
         return address, external_uri, internal_address, external_address
 
@@ -533,10 +548,10 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
 
     def _request(self, uri, params, method):
         try:
-            response = getattr(requests, method)(uri, params=params,
-                                                 verify=self.ssl_certificate_verification,
-                                                 timeout=(2, 60))
-        except AttributeError:
+            response = http_request(method, uri, params=params,
+                                    verify=self.ssl_certificate_verification,
+                                    timeout=SERVER_TIMEOUT)
+        except ValueError:
             response = None
 
         if response:
@@ -553,7 +568,8 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
             start_time = time.time()
             if url.endswith('library/sections'):
                 url = self.join_url(self.access_path, url)
-            uri = '%s://%s:%s%s' % (self.protocol, self.get_address(), self.get_port(), url)
+            uri = '%s://%s%s' % (self.protocol,
+                                 format_netloc(self.get_address(), self.get_port()), url)
             params = copy.deepcopy(self.plex_identification_header)
             if params is not None:
                 params.update(extra_headers)
@@ -578,7 +594,16 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
                 LOG.debug('Server: read timeout for %s on %s ' % (self.get_address(), url))
                 WINDOW.setProperty('plugin.video.pyplexer-refresh.servers', 'true')
 
+            except requests.exceptions.RequestException as error:
+                LOG.error('Server request failed for %s on %s: %s' %
+                          (self.get_address(), url, error))
+                WINDOW.setProperty('plugin.video.pyplexer-refresh.servers', 'true')
+
             else:
+                if response is None:
+                    LOG.error('Unsupported HTTP method requested: %s' % method)
+                    return '<?xml version="1.0" encoding="UTF-8"?>' \
+                           '<message status="error"></message>'
                 LOG.debug('URL was: %s using %s' % (response.url, self.protocol))
 
                 if response.status_code == requests.codes.ok:  # pylint: disable=no-member
