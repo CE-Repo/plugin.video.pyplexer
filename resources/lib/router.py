@@ -98,9 +98,14 @@ def run(start_time):  # pylint: disable=too-many-locals, too-many-statements, to
         provider.watchlist_remove(context)
         return _finished(start_time)
 
-    if command == COMMANDS.TOGGLE_EXTERNAL_WATCHLIST:
+    if command == COMMANDS.ADD_EXTERNAL_WATCHLIST:
         from routes.browse import provider
-        provider.watchlist_toggle_external(context)
+        provider.watchlist_add_external(context)
+        return _finished(start_time)
+
+    if command == COMMANDS.REMOVE_EXTERNAL_WATCHLIST:
+        from routes.browse import provider
+        provider.watchlist_remove_external(context)
         return _finished(start_time)
 
     if command == COMMANDS.DELETEREFRESH:

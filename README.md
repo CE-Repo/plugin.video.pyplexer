@@ -117,9 +117,10 @@ suppressed with **Skip Context Menus** — both in *Settings → Look and Feel*.
 **On library and widget items** — When Plex media has been scraped into the
 Kodi library, a *PyPlexer* submenu adds *Play Transcoded*, *Mark as watched*
 and *Mark as unwatched*, so watched state set in Kodi reaches the server.
-On TMDb Helper movie and TV-show widgets it also adds *Add/remove from Plex
-Watchlist*; the action resolves the item's TMDb/IMDb/TVDb id, then adds it to or
-removes it from the Watchlist of the Plex account signed into PyPlexer.
+On TMDb Helper movie and TV-show widgets it also adds *Add to Plex Watchlist*
+and *Remove from Plex Watchlist*. The actions resolve the item's
+TMDb/IMDb/TVDb id, then update the Watchlist of the Plex account signed into
+PyPlexer.
 
 ## Settings
 
@@ -234,9 +235,9 @@ The player hands the title over together with the data it already knows -
 PyPlexer resolves that to a single item instead of returning everything Plex'
 full text search finds for the word.
 
-TMDb Helper movie and TV-show widgets also expose *PyPlexer → Add/remove from
-Plex Watchlist* in Kodi's context menu. The same action adds or removes the
-focused title, depending on its current Plex Watchlist state.
+TMDb Helper movie and TV-show widgets also expose *PyPlexer → Add to Plex
+Watchlist* and *PyPlexer → Remove from Plex Watchlist* in Kodi's context menu.
+Each action directly performs the selected operation for the focused title.
 
 A film only counts as a match when its title matches exactly - checked against
 the library title, the original title and the sort title - and its year fits.

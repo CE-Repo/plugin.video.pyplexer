@@ -32,9 +32,14 @@
                     <label>30793</label>
                     <visible>[Window.IsActive(10000) | Window.IsActive(10025)] + String.IsEmpty(Container.PluginName) + String.StartsWith(ListItem.FileNameAndPath,plugin://plugin.video.pyplexer/) + [String.IsEqual(ListItem.DBTYPE,video) | String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,episode)]</visible>
                 </item>
-                <item library="resources/lib/context_actions/toggle_watchlist.py">
-                    <!-- Add to / remove from the Plex Watchlist -->
+                <item library="resources/lib/context_actions/add_to_watchlist.py">
+                    <!-- Add to the Plex Watchlist -->
                     <label>30834</label>
+                    <visible>[Window.IsActive(10000) | Window.IsActive(10025)] + [String.IsEqual(Container.PluginName,plugin.video.themoviedb.helper) | String.StartsWith(ListItem.FileNameAndPath,plugin://plugin.video.themoviedb.helper/) | !String.IsEmpty(ListItem.UniqueID(tmdb)) | !String.IsEmpty(ListItem.Property(tmdb_id))] + [String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow)]</visible>
+                </item>
+                <item library="resources/lib/context_actions/remove_from_watchlist.py">
+                    <!-- Remove from the Plex Watchlist -->
+                    <label>30837</label>
                     <visible>[Window.IsActive(10000) | Window.IsActive(10025)] + [String.IsEqual(Container.PluginName,plugin.video.themoviedb.helper) | String.StartsWith(ListItem.FileNameAndPath,plugin://plugin.video.themoviedb.helper/) | !String.IsEmpty(ListItem.UniqueID(tmdb)) | !String.IsEmpty(ListItem.Property(tmdb_id))] + [String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow)]</visible>
                 </item>
             </menu>

@@ -644,28 +644,6 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
         LOG.debug('No provider match for %s (%s)' % (external_guid, media_type))
         return None
 
-    def is_provider_watchlisted(self, rating_key):
-        """Return whether a global provider rating key is on the Watchlist.
-
-        ``None`` means the Watchlist request failed; callers must not guess an
-        action in that case because doing so could remove or add unexpectedly.
-        """
-        if not rating_key:
-            return None
-
-        tree = self.get_watchlist()
-        if tree is None:
-            return None
-
-        wanted = str(rating_key)
-        for element in tree.iter():
-            candidate = element.get('ratingKey')
-            guid = element.get('guid') or ''
-            if str(candidate or '') == wanted or guid.rsplit('/', 1)[-1] == wanted:
-                return True
-
-        return False
-
     def get_discover_hubs(self):
         """The account-level Plex Discover feed."""
         tree = self._parse_provider_xml(self.talk_to_provider(PROVIDER_DISCOVER, '/hubs'))

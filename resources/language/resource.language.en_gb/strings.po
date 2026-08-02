@@ -1700,7 +1700,7 @@ msgid "Mb/s"
 msgstr ""
 
 msgctxt "#30834"
-msgid "Add/remove from Plex Watchlist"
+msgid "Add to Plex Watchlist"
 msgstr ""
 
 msgctxt "#30835"
@@ -1709,4 +1709,8 @@ msgstr ""
 
 msgctxt "#30836"
 msgid "Plex could not match this title"
+msgstr ""
+
+msgctxt "#30837"
+msgid "Remove from Plex Watchlist"
 msgstr ""

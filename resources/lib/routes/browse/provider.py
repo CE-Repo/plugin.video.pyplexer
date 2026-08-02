@@ -50,8 +50,16 @@ def watchlist_remove(context):
     _watchlist_action(context, add=False)
 
 
-def watchlist_toggle_external(context):
-    """Toggle the focused TMDb Helper movie/show in the Plex Watchlist."""
+def watchlist_add_external(context):
+    _watchlist_external_action(context, add=True)
+
+
+def watchlist_remove_external(context):
+    _watchlist_external_action(context, add=False)
+
+
+def _watchlist_external_action(context, add):
+    """Add or remove the focused TMDb Helper item as explicitly requested."""
     context.plex_network = Plex(context.settings, load=False)
     if not context.plex_network.is_myplex_signedin():
         xbmcgui.Dialog().notification(heading=CONFIG['name'],
@@ -71,14 +79,7 @@ def watchlist_toggle_external(context):
                                       icon=CONFIG['icon'])
         return
 
-    watchlisted = context.plex_network.is_provider_watchlisted(rating_key)
-    if watchlisted is None:
-        success = False
-        add = False
-    else:
-        add = not watchlisted
-        success = context.plex_network.provider_watchlist_action(add, rating_key)
-
+    success = context.plex_network.provider_watchlist_action(add, rating_key)
     _watchlist_result(success, add)
     if success:
         xbmc.executebuiltin('Container.Refresh')

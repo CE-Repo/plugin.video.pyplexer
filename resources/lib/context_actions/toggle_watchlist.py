@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Toggle a TMDb Helper item in the signed-in Plex account Watchlist."""
+"""Run an explicit Plex Watchlist action for a TMDb Helper item."""
 
 import re
 import sys
@@ -13,7 +13,10 @@ import xbmcgui  # pylint: disable=import-error
 
 
 ADDON_ID = 'plugin.video.pyplexer'
-COMMAND = 'toggle_external_watchlist'
+COMMANDS = {
+    True: 'add_external_watchlist',
+    False: 'remove_external_watchlist',
+}
 SUPPORTED_IDS = ('tmdb', 'imdb', 'tvdb')
 
 
@@ -69,7 +72,7 @@ def _notify_unidentified():
                                   icon=addon.getAddonInfo('icon'))
 
 
-def run():
+def run(add):
     # sys.listitem is injected by Kodi for kodi.context.item scripts.
     try:
         list_item = sys.listitem  # pylint: disable=no-member
@@ -92,8 +95,4 @@ def run():
         return
 
     xbmc.executebuiltin('RunScript(%s,%s,%s,%s)' %
-                        (ADDON_ID, COMMAND, media_type, external_guid))
-
-
-if __name__ == '__main__':
-    run()
+                        (ADDON_ID, COMMANDS[bool(add)], media_type, external_guid))

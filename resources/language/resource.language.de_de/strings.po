@@ -1694,8 +1694,8 @@ msgid "Mb/s"
 msgstr "Mb/s"
 
 msgctxt "#30834"
-msgid "Add/remove from Plex Watchlist"
-msgstr "Plex-Merkliste hinzufügen/entfernen"
+msgid "Add to Plex Watchlist"
+msgstr "Zur Plex Merkliste hinzufügen"
 
 msgctxt "#30835"
 msgid "Could not identify this title"
@@ -1704,6 +1704,10 @@ msgstr "Dieser Titel konnte nicht erkannt werden"
 msgctxt "#30836"
 msgid "Plex could not match this title"
 msgstr "Plex konnte diesen Titel nicht zuordnen"
+
+msgctxt "#30837"
+msgid "Remove from Plex Watchlist"
+msgstr "Aus Plex Merkliste entfernen"
 
 #~ msgctxt "#30689"
 #~ msgid "Up Next requires Kodi 18 or higher"
