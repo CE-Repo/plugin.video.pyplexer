@@ -1714,3 +1714,7 @@ msgstr ""
 msgctxt "#30837"
 msgid "Remove from Plex Watchlist"
 msgstr ""
+
+msgctxt "#30838"
+msgid "Already in Plex Watchlist"
+msgstr ""

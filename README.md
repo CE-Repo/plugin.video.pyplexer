@@ -237,7 +237,8 @@ full text search finds for the word.
 
 TMDb Helper movie and TV-show widgets also expose *PyPlexer → Add to Plex
 Watchlist* and *PyPlexer → Remove from Plex Watchlist* in Kodi's context menu.
-Each action directly performs the selected operation for the focused title.
+Each action performs the selected operation for the focused title and reports
+whether it was added, removed or was already present.
 
 A film only counts as a match when its title matches exactly - checked against
 the library title, the original title and the sort title - and its year fits.

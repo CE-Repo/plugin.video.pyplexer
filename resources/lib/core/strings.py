@@ -234,6 +234,7 @@ STRINGS = {
     'Could not identify this title': 30835,
     'Plex could not match this title': 30836,
     'Remove from Plex Watchlist': 30837,
+    'Already in Plex Watchlist': 30838,
 }
 
 

@@ -79,6 +79,10 @@ def _watchlist_external_action(context, add):
                                       icon=CONFIG['icon'])
         return
 
+    if add and context.plex_network.is_provider_watchlisted(rating_key):
+        _watchlist_already_added()
+        return
+
     success = context.plex_network.provider_watchlist_action(add, rating_key)
     _watchlist_result(success, add)
     if success:
@@ -100,14 +104,23 @@ def _watchlist_result(success, add):
     """Show the localized result shared by direct and external actions."""
 
     if success and add:
-        message = i18n_or('Added to Watchlist', 'Zur Merkliste hinzugefügt')
+        message = i18n_or('Added to Watchlist',
+                          'Zur Merkliste erfolgreich hinzugefügt')
     elif success:
-        message = i18n_or('Removed from Watchlist', 'Von Merkliste entfernt')
+        message = i18n_or('Removed from Watchlist',
+                          'Aus Plex Merkliste erfolgreich entfernt')
     else:
         message = i18n_or('Could not update Watchlist',
                           'Merkliste konnte nicht aktualisiert werden')
 
     xbmcgui.Dialog().notification(heading=CONFIG['name'], message=message, icon=CONFIG['icon'])
+
+
+def _watchlist_already_added():
+    message = i18n_or('Already in Plex Watchlist',
+                      'Ist bereits in der Plex Merkliste')
+    xbmcgui.Dialog().notification(heading=CONFIG['name'], message=message,
+                                  icon=CONFIG['icon'])
 
 
 def discover(context):
