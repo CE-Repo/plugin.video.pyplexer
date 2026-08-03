@@ -11,8 +11,6 @@ STRINGS = {
     # core
     'Delete': 117,
     'Refresh': 184,
-    'Subtitles': 287,
-    'Audio': 292,
     'Update library': 653,
     'Mark as watched': 16103,
     'Mark as unwatched': 16104,
@@ -67,8 +65,6 @@ STRINGS = {
     'Library refresh started': 30068,
     'myPlex not configured': 30069,
     'Select media to play': 30071,
-    'Select subtitle': 30072,
-    'Select audio': 30073,
     'Select master server': 30074,
     'Known server list': 30075,
     'Switch User': 30076,

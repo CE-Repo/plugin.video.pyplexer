@@ -17,12 +17,9 @@ from infotagger.listitem import ListItemInfoTag  # pylint: disable=import-error
 
 from core.common import get_argv
 from core.common import get_handle
-from core.constants import COMMANDS
-from core.constants import CONFIG
 from core.constants import MODES
 from core.logger import Logger
 from core.strings import i18n
-from core.strings import i18n_or
 from gui.builders.common import get_media_data
 
 LOG = Logger()
@@ -58,10 +55,12 @@ def process_provider(context, base, tree, in_watchlist=False):
 
     nodes = list(_iter_nodes(tree))
     _attach_summaries(context, base, nodes)
+    watchlist_ids = (set() if in_watchlist else
+                     context.plex_network.get_provider_watchlist_ids())
 
     items = []
     for node in nodes:
-        entry = _build_item(base, token, node, in_watchlist)
+        entry = _build_item(base, token, node, in_watchlist, watchlist_ids)
         if entry:
             items.append(entry)
 
@@ -123,7 +122,7 @@ def _attach_summaries(context, base, nodes):
     LOG.debug('Summary filled in for %s of %s item(s)' % (filled, len(missing)))
 
 
-def _build_item(base, token, node, in_watchlist=False):
+def _build_item(base, token, node, in_watchlist=False, watchlist_ids=None):
     title = node.get('title') or node.get('grandparentTitle') or i18n('Unknown')
     node_type = (node.get('type') or '').lower()
     is_folder = node.tag in _FOLDER_TAGS or node_type in _FOLDER_TYPES
@@ -143,7 +142,7 @@ def _build_item(base, token, node, in_watchlist=False):
         info_tag.add_stream_info('video', stream_info.get('video', {}))
         info_tag.add_stream_info('audio', stream_info.get('audio', {}))
 
-    _add_watchlist_context_menu(list_item, node, in_watchlist)
+    _set_watchlist_properties(list_item, node, in_watchlist, watchlist_ids)
 
     if is_folder:
         drill = _drill_url(base, node)
@@ -189,8 +188,8 @@ def _build_item(base, token, node, in_watchlist=False):
     return '', list_item, False
 
 
-def _add_watchlist_context_menu(list_item, node, in_watchlist):
-    """Add a 'Add to / Remove from Watchlist' context menu entry.
+def _set_watchlist_properties(list_item, node, in_watchlist, watchlist_ids=None):
+    """Expose Watchlist data for the context items declared in addon.xml.
 
     Plex only allows movies and shows on the Watchlist.
     """
@@ -203,16 +202,10 @@ def _add_watchlist_context_menu(list_item, node, in_watchlist):
     if not rating_key:
         return
 
-    watchlisted = in_watchlist or node.get('watchlistedAt') is not None
-    if watchlisted:
-        label = i18n_or('Remove from Watchlist', 'Von Merkliste entfernen')
-        command = COMMANDS.REMOVE_WATCHLIST
-    else:
-        label = i18n_or('Add to Watchlist', 'Zur Merkliste hinzufügen')
-        command = COMMANDS.ADD_WATCHLIST
-
-    action = 'RunScript(%s, %s, %s)' % (CONFIG['id'], command, rating_key)
-    list_item.addContextMenuItems([(label, action)])
+    watchlisted = (in_watchlist or node.get('watchlistedAt') is not None or
+                   str(rating_key) in (watchlist_ids or set()))
+    list_item.setProperty('PyPlexer.WatchlistRatingKey', str(rating_key))
+    list_item.setProperty('PyPlexer.Watchlisted', 'true' if watchlisted else 'false')
 
 
 def _info_labels(title, node_type, node):

@@ -18,7 +18,6 @@ def __enum(**enums):
 COMMANDS = __enum(
     UNSET=None,
     ADDTOPLAYLIST='add_playlist_item',
-    AUDIO='audio',
     DELETE='delete',
     DELETEPLAYLIST='delete_playlist',
     DELETEFROMPLAYLIST='delete_playlist_item',
@@ -29,7 +28,6 @@ COMMANDS = __enum(
     REFRESH='refresh',
     SIGNIN='signin',
     SIGNOUT='signout',
-    SUBS='subs',
     SWITCHUSER='switchuser',
     UPDATE='update',
     WATCH='watch',

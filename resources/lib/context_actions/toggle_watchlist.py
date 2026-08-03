@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Run an explicit Plex Watchlist action for a TMDb Helper item."""
+"""Run an explicit Plex Watchlist action for the focused Kodi item."""
 
 import re
 import sys
@@ -16,6 +16,10 @@ ADDON_ID = 'plugin.video.pyplexer'
 COMMANDS = {
     True: 'add_external_watchlist',
     False: 'remove_external_watchlist',
+}
+DIRECT_COMMANDS = {
+    True: 'add_watchlist',
+    False: 'remove_watchlist',
 }
 SUPPORTED_IDS = ('tmdb', 'imdb', 'tvdb')
 
@@ -79,6 +83,15 @@ def run(add):
         info_tag = list_item.getVideoInfoTag()
     except (AttributeError, RuntimeError):
         _notify_unidentified()
+        return
+
+    # PyPlexer listings already know the provider rating key. Using it avoids
+    # resolving an external TMDb/IMDb/TVDb id and lets the global context item
+    # replace the old top-level addContextMenuItems() action.
+    rating_key = _clean_id(list_item.getProperty('PyPlexer.WatchlistRatingKey'))
+    if rating_key:
+        xbmc.executebuiltin('RunScript(%s,%s,%s)' %
+                            (ADDON_ID, DIRECT_COMMANDS[bool(add)], rating_key))
         return
 
     try:

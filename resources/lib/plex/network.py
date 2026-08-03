@@ -71,6 +71,7 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
         self.plexhome_cache = 'plexhome_user.pcache'
         self.client_id = None
         self.user_list = {}
+        self._provider_watchlist_ids = None
         self.plexhome_settings = {
             'myplex_signedin': False,
             'plexhome_enabled': False,
@@ -649,18 +650,36 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
         if not rating_key:
             return None
 
+        return str(rating_key) in self.get_provider_watchlist_ids()
+
+    def get_provider_watchlist_ids(self):
+        """Return all provider ids on the Watchlist, fetched only once."""
+        if self._provider_watchlist_ids is not None:
+            return self._provider_watchlist_ids
+
+        ids = set()
         tree = self.get_watchlist()
-        if tree is None:
-            return None
+        if tree is not None:
+            for element in tree.iter():
+                candidate = element.get('ratingKey')
+                guid = element.get('guid') or ''
+                if candidate:
+                    ids.add(str(candidate))
+                if guid:
+                    ids.add(guid.rsplit('/', 1)[-1])
+
+        self._provider_watchlist_ids = ids
+        return ids
+
+    def _update_provider_watchlist_ids(self, add, rating_key):
+        if self._provider_watchlist_ids is None:
+            return
 
         wanted = str(rating_key)
-        for element in tree.iter():
-            candidate = element.get('ratingKey')
-            guid = element.get('guid') or ''
-            if str(candidate or '') == wanted or guid.rsplit('/', 1)[-1] == wanted:
-                return True
-
-        return False
+        if add:
+            self._provider_watchlist_ids.add(wanted)
+        else:
+            self._provider_watchlist_ids.discard(wanted)
 
     def get_discover_hubs(self):
         """The account-level Plex Discover feed."""
@@ -692,6 +711,7 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
                 continue
 
             if response.status_code < 400:
+                self._update_provider_watchlist_ids(add, rating_key)
                 return True
 
             LOG.error('Watchlist action HTTP %s at %s: %s' %

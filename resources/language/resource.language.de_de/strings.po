@@ -300,14 +300,6 @@ msgctxt "#30071"
 msgid "Select media to play"
 msgstr "Medien für Wiedergabe auswählen"
 
-msgctxt "#30072"
-msgid "Select subtitle"
-msgstr "Untertiel auswählen"
-
-msgctxt "#30073"
-msgid "Select audio"
-msgstr "Audio auswählen"
-
 msgctxt "#30074"
 msgid "Select master server"
 msgstr "Hauptserver auswählen"

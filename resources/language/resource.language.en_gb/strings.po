@@ -301,14 +301,6 @@ msgctxt "#30071"
 msgid "Select media to play"
 msgstr ""
 
-msgctxt "#30072"
-msgid "Select subtitle"
-msgstr ""
-
-msgctxt "#30073"
-msgid "Select audio"
-msgstr ""
-
 msgctxt "#30074"
 msgid "Select master server"
 msgstr ""

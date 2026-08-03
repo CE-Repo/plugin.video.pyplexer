@@ -14,6 +14,7 @@ from gui.builders.common import get_fanart_image
 from gui.builders.common import get_media_data
 from gui.builders.common import get_metadata
 from gui.builders.common import get_thumb_image
+from gui.builders.common import is_watchlisted
 from gui.context_menu import ContextMenu
 from gui.list_item import create_gui_item
 
@@ -81,6 +82,7 @@ def create_movie_item(context, item, library=False):
         'key': item.data.get('key', ''),
         'ratingKey': str(item.data.get('ratingKey', 0)),
         'guid': item.data.get('guid', ''),
+        'watchlisted': is_watchlisted(context, item.data),
         'duration': duration,
         'resume': int(int(view_offset) / 1000)
     }

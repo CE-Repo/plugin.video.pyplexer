@@ -12,6 +12,19 @@ from playback.quality import media_details
 LOG = Logger()
 
 
+def is_watchlisted(context, data):
+    """Return the actual Plex Watchlist state for a movie or show."""
+    if data.get('watchlistedAt') is not None:
+        return True
+    if not context.plex_network.is_myplex_signedin():
+        return False
+
+    guid = data.get('guid') or ''
+    rating_key = guid.rsplit('/', 1)[-1] if guid else ''
+    return bool(rating_key and
+                context.plex_network.is_provider_watchlisted(rating_key))
+
+
 def get_link_url(server, url, path_data):
     path = path_data.get('key', '')
 

@@ -12,6 +12,7 @@ from gui.builders.common import get_clearlogo_image
 from gui.builders.common import get_fanart_image
 from gui.builders.common import get_metadata
 from gui.builders.common import get_thumb_image
+from gui.builders.common import is_watchlisted
 from gui.context_menu import ContextMenu
 from gui.list_item import create_gui_item
 
@@ -59,7 +60,8 @@ def create_show_item(context, item, library=False):
         'banner': get_banner_image(context, item.server, item.data),
         'key': item.data.get('key', ''),
         'ratingKey': str(item.data.get('ratingKey', 0)),
-        'guid': item.data.get('guid', '')
+        'guid': item.data.get('guid', ''),
+        'watchlisted': is_watchlisted(context, item.data)
     }
 
     # Set up overlays for watched and unwatched episodes

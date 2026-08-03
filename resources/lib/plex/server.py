@@ -960,18 +960,6 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
     def get_metadata(self, media_id):
         return self.processed_xml(self._update_path('/library/metadata/%s' % media_id))
 
-    def set_audio_stream(self, part_id, stream_id):
-        options = {
-            'audioStreamID': stream_id,
-        }
-        return self.tell(self._update_path('/library/parts/%s' % part_id, options))
-
-    def set_subtitle_stream(self, part_id, stream_id):
-        options = {
-            'subtitleStreamID': stream_id,
-        }
-        return self.tell(self._update_path('/library/parts/%s' % part_id, options))
-
     def delete_metadata(self, media_id):
         return self.talk(self._update_path('/library/metadata/%s' % media_id), method='delete')
 

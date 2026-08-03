@@ -7,7 +7,6 @@ from core.constants import CONFIG
 from core.constants import MODES
 from core.logger import Logger
 from core.strings import i18n
-from core.strings import i18n_or
 
 LOG = Logger()
 
@@ -39,15 +38,10 @@ class ContextMenu:
 
         self._add_go_to_season()
         self._add_go_to_show()
-        self._add_watchlist()
-        self._add_mark_watched()
-        self._add_mark_unwatched()
         self._add_delete_from_playlist()
         self._add_add_to_playlist()
         self._add_delete_playlist()
         self._add_delete()
-        self._add_audio()
-        self._add_subtitles()
         self._add_update_library()
         self._add_refresh()
 
@@ -73,42 +67,6 @@ class ContextMenu:
                      'Container.Update(plugin://%s/?mode=%s&url=%s&rating_key=%s)' %
                      (CONFIG['id'], MODES.TVSEASONS, self.server.get_uuid(), grandparent_id))
                 )
-
-    def _add_watchlist(self):
-        # Plex only allows movies and shows on the Watchlist. The action uses
-        # the global metadata id, i.e. the last segment of the plex:// guid.
-        if self.data.get('source') not in ('movies', 'tvshows'):
-            return
-
-        plex_network = getattr(self.context, 'plex_network', None)
-        if plex_network is None or not plex_network.is_myplex_signedin():
-            return
-
-        guid = self.data.get('guid', '')
-        rating_key = guid.rsplit('/', 1)[-1] if guid else ''
-        if not rating_key:
-            return
-
-        self._context_menu.append(
-            (i18n_or('Add to Watchlist', 'Zur Merkliste hinzufügen'),
-             'RunScript(%s, %s, %s)' % (CONFIG['id'], COMMANDS.ADD_WATCHLIST, rating_key))
-        )
-
-    def _add_mark_watched(self):
-        if self.item_type in ['video', 'season']:
-            self._context_menu.append(
-                (i18n('Mark as watched'),
-                 'RunScript(' + CONFIG['id'] + ', %s, %s, %s, %s)' %
-                 (COMMANDS.WATCH, self.server.get_uuid(), self.item_id, 'watch'))
-            )
-
-    def _add_mark_unwatched(self):
-        if self.item_type in ['video', 'season']:
-            self._context_menu.append(
-                (i18n('Mark as unwatched'),
-                 'RunScript(' + CONFIG['id'] + ', %s, %s, %s, %s)' %
-                 (COMMANDS.WATCH, self.server.get_uuid(), self.item_id, 'unwatch'))
-            )
 
     def _add_delete_from_playlist(self):
         if self.data.get('playlist_item_id'):
@@ -151,22 +109,6 @@ class ContextMenu:
             self._context_menu.append(
                 (i18n('Delete'), 'RunScript(' + CONFIG['id'] + ', %s, %s, %s)' %
                  (COMMANDS.DELETE, self.server.get_uuid(), self.item_id))
-            )
-
-    def _add_audio(self):
-        item_source = self.data.get('source', '').lower()
-        if self.item_type == 'video' and item_source in ['tvepisodes', 'movies']:
-            self._context_menu.append(
-                (i18n('Audio'), 'RunScript(' + CONFIG['id'] + ', %s, %s, %s)' %
-                 (COMMANDS.AUDIO, self.server.get_uuid(), self.item_id))
-            )
-
-    def _add_subtitles(self):
-        item_source = self.data.get('source', '').lower()
-        if self.item_type == 'video' and item_source in ['tvepisodes', 'movies']:
-            self._context_menu.append(
-                (i18n('Subtitles'), 'RunScript(' + CONFIG['id'] + ', %s, %s, %s)' %
-                 (COMMANDS.SUBS, self.server.get_uuid(), self.item_id))
             )
 
     def _add_update_library(self):

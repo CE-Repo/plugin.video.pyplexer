@@ -51,15 +51,14 @@ def create_gui_item(context, item):
     list_item.setArt(_get_art(item))
 
     if item.context_menu is not None:
-        if not item.is_folder and item.extra.get('type', 'video').lower() == 'video':
-            # Play Transcoded
-            item.context_menu.insert(0, (i18n('Play Transcoded'),
-                                         'PlayMedia(%s&transcode=1)' % url))
-            LOG.debug('Setting transcode options to [%s&transcode=1]' % url)
         LOG.debug('Building Context Menus')
         list_item.addContextMenuItems(item.context_menu)
 
     item_properties = _get_properties(context, item)
+    if (not item.is_folder and
+            item.extra.get('type', 'video').lower() == 'video'):
+        item_properties['PyPlexer.CanTranscode'] = 'true'
+        item_properties['PyPlexer.PluginUrl'] = url
     item_properties = info_tag.set_resume_point(item_properties)
 
     list_item.setProperties(item_properties)
@@ -143,6 +142,24 @@ def _get_art(item):
 
 def _get_properties(context, item):
     item_properties = {}
+
+    if item.extra.get('source') in ('movies', 'tvshows', 'tvseasons', 'tvepisodes'):
+        media_id = str(item.extra.get('ratingKey', ''))
+        if item.url and media_id and media_id != '0':
+            item_properties['PyPlexer.ServerUrl'] = item.url
+            item_properties['PyPlexer.MediaId'] = media_id
+            item_properties['PyPlexer.CanMarkWatched'] = 'true'
+
+    # Context items added through ListItem.addContextMenuItems() always appear
+    # in Kodi's main context menu. Expose the Watchlist data as properties so
+    # addon.xml can place the action in the shared PyPlexer submenu instead.
+    if item.extra.get('source') in ('movies', 'tvshows'):
+        guid = item.extra.get('guid', '')
+        rating_key = guid.rsplit('/', 1)[-1] if guid else ''
+        if rating_key:
+            item_properties['PyPlexer.WatchlistRatingKey'] = rating_key
+            item_properties['PyPlexer.Watchlisted'] = (
+                'true' if item.extra.get('watchlisted') else 'false')
 
     # Music related tags
     if item.extra.get('type', '').lower() == 'music':

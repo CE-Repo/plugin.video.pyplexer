@@ -130,18 +130,6 @@ def run(start_time):  # pylint: disable=too-many-locals, too-many-statements, to
         delete_media.run(context)
         return _finished(start_time)
 
-    # Display subtitle selection screen
-    if command == COMMANDS.SUBS:
-        from routes.play import subtitle_stream
-        subtitle_stream.run(context)
-        return _finished(start_time)
-
-    # Display audio stream selection screen
-    if command == COMMANDS.AUDIO:
-        from routes.play import audio_stream
-        audio_stream.run(context)
-        return _finished(start_time)
-
     # Allow a master server to be selected (for myPlex Queue)
     if command == COMMANDS.MASTER:
         from routes.servers import set_master
