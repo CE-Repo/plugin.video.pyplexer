@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from infotagger.listitem import ListItemInfoTag  # pylint: disable=import-error
 
 from core.common import get_argv
+from core.common import get_current_plugin_url
 from core.logger import Logger
 from core.strings import i18n
 from core.strings import item_translate
@@ -55,6 +56,9 @@ def create_gui_item(context, item):
         list_item.addContextMenuItems(item.context_menu)
 
     item_properties = _get_properties(context, item)
+    folder_url = _get_folder_url(item, url)
+    if folder_url:
+        item_properties['PyPlexer.FolderUrl'] = folder_url
     if (not item.is_folder and
             item.extra.get('type', 'video').lower() == 'video'):
         item_properties['PyPlexer.CanTranscode'] = 'true'
@@ -67,6 +71,16 @@ def create_gui_item(context, item):
         item.is_folder = False
 
     return url, list_item, item.is_folder
+
+
+def _get_folder_url(item, item_url):
+    if item.url.startswith('cmd:'):
+        return ''
+
+    if item.is_folder:
+        return item_url
+
+    return get_current_plugin_url()
 
 
 def _get_url(item):

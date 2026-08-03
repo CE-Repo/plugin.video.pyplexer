@@ -1706,3 +1706,7 @@ msgstr ""
 msgctxt "#30839"
 msgid "Add/Remove from Watchlist"
 msgstr ""
+
+msgctxt "#30840"
+msgid "Open folder"
+msgstr ""

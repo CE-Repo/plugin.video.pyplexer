@@ -117,8 +117,10 @@ suppressed with **Skip Context Menus** — both in *Settings → Look and Feel*.
 **On library and widget items** — When Plex media has been scraped into the
 Kodi library, a *PyPlexer* submenu adds *Transcoding*, *Mark as watched*
 and *Mark as unwatched*, so watched state set in Kodi reaches the server.
-On TMDb Helper movie and TV-show widgets it also adds *Add to Plex Watchlist*
-and *Remove from Plex Watchlist*. The actions resolve the item's
+On home-screen widgets backed by PyPlexer, the submenu provides *Open folder*
+to open the widget's PyPlexer source. On TMDb Helper movie and TV-show widgets
+it also adds *Add to Plex Watchlist* and *Remove from Plex Watchlist*. The
+Watchlist actions resolve the item's
 TMDb/IMDb/TVDb id, then update the Watchlist of the Plex account signed into
 PyPlexer.
 

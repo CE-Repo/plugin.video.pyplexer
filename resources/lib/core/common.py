@@ -18,6 +18,16 @@ def get_argv():
     return sys.argv
 
 
+def get_current_plugin_url():
+    """Return the full URL of the currently rendered plugin container."""
+    argv = get_argv()
+    if not argv:
+        return ''
+
+    query = argv[2] if len(argv) > 2 else ''
+    return argv[0] + query
+
+
 def get_handle():
     try:
         return int(get_argv()[1])

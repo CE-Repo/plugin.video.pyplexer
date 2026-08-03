@@ -230,6 +230,7 @@ STRINGS = {
     'Plex could not match this title': 30836,
     'Already in the Watchlist': 30838,
     'Add/Remove from Watchlist': 30839,
+    'Open folder': 30840,
 }
 
 

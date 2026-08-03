@@ -1701,6 +1701,10 @@ msgctxt "#30839"
 msgid "Add/Remove from Watchlist"
 msgstr "Aus Merkliste hinzufügen/entfernen"
 
+msgctxt "#30840"
+msgid "Open folder"
+msgstr "Ordner öffnen"
+
 #~ msgctxt "#30689"
 #~ msgid "Up Next requires Kodi 18 or higher"
 #~ msgstr "‚Up Next‘ benötigt Kodi 18 oder höher"

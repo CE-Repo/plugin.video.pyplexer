@@ -16,6 +16,7 @@ import xbmcplugin  # pylint: disable=import-error
 from infotagger.listitem import ListItemInfoTag  # pylint: disable=import-error
 
 from core.common import get_argv
+from core.common import get_current_plugin_url
 from core.common import get_handle
 from core.constants import MODES
 from core.logger import Logger
@@ -59,9 +60,11 @@ def process_provider(context, base, tree, in_watchlist=False):
                      context.plex_network.get_provider_watchlist_ids())
 
     items = []
+    current_folder_url = get_current_plugin_url()
     for node in nodes:
         entry = _build_item(base, token, node, in_watchlist, watchlist_ids)
         if entry:
+            _set_folder_property(entry, current_folder_url)
             items.append(entry)
 
     if items:
@@ -69,6 +72,13 @@ def process_provider(context, base, tree, in_watchlist=False):
 
     xbmcplugin.endOfDirectory(get_handle(),
                               cacheToDisc=context.settings.cache_directory())
+
+
+def _set_folder_property(entry, parent_url):
+    item_url, list_item, is_folder = entry
+    folder_url = item_url if is_folder else parent_url
+    if folder_url:
+        list_item.setProperty('PyPlexer.FolderUrl', folder_url)
 
 
 def _iter_nodes(tree):

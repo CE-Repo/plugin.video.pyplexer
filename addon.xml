@@ -17,6 +17,11 @@
         <menu id="kodi.core.main">
             <menu>
                 <label>PyPlexer</label>
+                <item library="resources/lib/context_actions/open_folder.py">
+                    <!-- Open folder -->
+                    <label>30840</label>
+                    <visible>Window.IsVisible(home) + [!String.IsEmpty(ListItem.Property(PyPlexer.FolderUrl)) | !String.IsEmpty(ListItem.Property(PyPlexer.WatchlistRatingKey))]</visible>
+                </item>
                 <item library="resources/lib/context_actions/play_transcoded.py">
                     <!-- Transcoding -->
                     <label>30086</label>
