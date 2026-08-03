@@ -75,7 +75,7 @@ STRINGS = {
     'Refresh Data': 30083,
     'Channels': 30084,
     'Playlists': 30085,
-    'Play Transcoded': 30086,
+    'Transcoding': 30086,
     'All episodes': 30087,
     'Season': 30088,
     'Search for': 30089,
@@ -229,6 +229,7 @@ STRINGS = {
     'Could not identify this title': 30835,
     'Plex could not match this title': 30836,
     'Already in the Watchlist': 30838,
+    'Add/Remove from Watchlist': 30839,
 }
 
 

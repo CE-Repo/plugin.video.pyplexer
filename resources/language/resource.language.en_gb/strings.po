@@ -350,7 +350,7 @@ msgid "Playlists"
 msgstr ""
 
 msgctxt "#30086"
-msgid "Play Transcoded"
+msgid "Transcoding"
 msgstr ""
 
 msgctxt "#30087"
@@ -1701,4 +1701,8 @@ msgstr ""
 
 msgctxt "#30838"
 msgid "Already in the Watchlist"
+msgstr ""
+
+msgctxt "#30839"
+msgid "Add/Remove from Watchlist"
 msgstr ""

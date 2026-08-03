@@ -58,6 +58,10 @@ def watchlist_remove_external(context):
     _watchlist_external_action(context, add=False)
 
 
+def watchlist_toggle_external(context):
+    _watchlist_external_action(context, add=None)
+
+
 def _watchlist_external_action(context, add):
     """Add or remove the focused TMDb Helper item as explicitly requested."""
     context.plex_network = Plex(context.settings, load=False)
@@ -79,7 +83,10 @@ def _watchlist_external_action(context, add):
                                       icon=CONFIG['icon'])
         return
 
-    if add and context.plex_network.is_provider_watchlisted(rating_key):
+    watchlisted = context.plex_network.is_provider_watchlisted(rating_key)
+    if add is None:
+        add = not watchlisted
+    elif add and watchlisted:
         _watchlist_already_added()
         return
 

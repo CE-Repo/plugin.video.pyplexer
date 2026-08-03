@@ -16,6 +16,7 @@ ADDON_ID = 'plugin.video.pyplexer'
 COMMANDS = {
     True: 'add_external_watchlist',
     False: 'remove_external_watchlist',
+    None: 'toggle_external_watchlist',
 }
 DIRECT_COMMANDS = {
     True: 'add_watchlist',
@@ -116,4 +117,4 @@ def run(add):
         return
 
     xbmc.executebuiltin('RunScript(%s,%s,%s,%s)' %
-                        (ADDON_ID, COMMANDS[bool(add)], media_type, external_guid))
+                        (ADDON_ID, COMMANDS[add], media_type, external_guid))

@@ -40,6 +40,7 @@ COMMANDS = __enum(
     REMOVE_WATCHLIST='remove_watchlist',
     ADD_EXTERNAL_WATCHLIST='add_external_watchlist',
     REMOVE_EXTERNAL_WATCHLIST='remove_external_watchlist',
+    TOGGLE_EXTERNAL_WATCHLIST='toggle_external_watchlist',
 )
 
 MODES = __enum(

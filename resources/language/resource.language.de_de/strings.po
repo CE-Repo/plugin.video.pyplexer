@@ -349,8 +349,8 @@ msgid "Playlists"
 msgstr "Wiedergabelisten"
 
 msgctxt "#30086"
-msgid "Play Transcoded"
-msgstr "Transcodierte Wiedergabe"
+msgid "Transcoding"
+msgstr "Transkodieren"
 
 msgctxt "#30087"
 msgid "All episodes"
@@ -1696,6 +1696,10 @@ msgstr "Plex konnte diesen Titel nicht zuordnen"
 msgctxt "#30838"
 msgid "Already in the Watchlist"
 msgstr "Bereits in der Merkliste vorhanden"
+
+msgctxt "#30839"
+msgid "Add/Remove from Watchlist"
+msgstr "Aus Merkliste hinzufügen/entfernen"
 
 #~ msgctxt "#30689"
 #~ msgid "Up Next requires Kodi 18 or higher"
