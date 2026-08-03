@@ -29,13 +29,18 @@ def _clean_id(value):
     return value if re.fullmatch(r'[A-Za-z0-9._-]+', value) else ''
 
 
-def _media_type(info_tag, params):
+def _media_type(list_item, info_tag, params):
     try:
         value = info_tag.getMediaType()
     except (AttributeError, RuntimeError):
         value = ''
 
-    value = (value or params.get('tmdb_type', [''])[0] or
+    value = (value or list_item.getProperty('tmdb_type') or
+             list_item.getProperty('media_type') or
+             list_item.getProperty('type') or
+             params.get('tmdb_type', [''])[0] or
+             params.get('media_type', [''])[0] or
+             params.get('type', [''])[0] or
              xbmc.getInfoLabel('ListItem.DBTYPE')).lower()
     if value == 'movie':
         return 'movie'
@@ -53,9 +58,12 @@ def _unique_id(list_item, info_tag, params):
             pass
 
         if not value:
-            value = list_item.getProperty('%s_id' % provider)
-        if not value:
-            value = list_item.getProperty('item.%s_id' % provider)
+            for property_name in ('%s_id' % provider,
+                                  'item.%s_id' % provider,
+                                  provider):
+                value = list_item.getProperty(property_name)
+                if value:
+                    break
         if not value:
             value = params.get('%s_id' % provider, [''])[0]
         if not value:
@@ -100,7 +108,7 @@ def run(add):
         path = xbmc.getInfoLabel('ListItem.FileNameAndPath')
 
     params = parse_qs(urlsplit(path or '').query)
-    media_type = _media_type(info_tag, params)
+    media_type = _media_type(list_item, info_tag, params)
     external_guid = _unique_id(list_item, info_tag, params)
 
     if not media_type or not external_guid:
