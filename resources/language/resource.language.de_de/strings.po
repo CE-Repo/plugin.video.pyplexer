@@ -1710,8 +1710,8 @@ msgid "External artwork"
 msgstr "Externe Bilder"
 
 msgctxt "#30842"
-msgid "Prefer external thumbs, posters and clearlogos"
-msgstr "Externe Thumbs, Poster und Clearlogos bevorzugen"
+msgid "Prefer external artwork and TMDb fanart"
+msgstr "Externe Bilder und TMDb-Fanart bevorzugen"
 
 msgctxt "#30844"
 msgid "Fanart.tv personal API key"
@@ -1722,16 +1722,16 @@ msgid "Preferred artwork language"
 msgstr "Bevorzugte Bildsprache"
 
 msgctxt "#30846"
-msgid "Use localized thumbs, posters and clearlogos from Fanart.tv and optionally TMDb, with Plex as the final fallback. Large libraries load missing artwork in the background."
-msgstr "Lokalisierte Thumbs, Poster und Clearlogos von Fanart.tv und optional TMDb verwenden; Plex dient als letzter Fallback. Große Bibliotheken laden fehlende Bilder im Hintergrund."
+msgid "Use localized thumbs, posters and clearlogos from Fanart.tv and optionally TMDb. Fanart uses five language-neutral TMDb wallpapers, with Plex as the fallback. Large libraries load missing artwork in the background."
+msgstr "Lokalisierte Thumbs, Poster und Clearlogos von Fanart.tv und optional TMDb verwenden. Fanart nutzt fünf sprachneutrale TMDb-Wallpaper; Plex dient als Fallback. Große Bibliotheken laden fehlende Bilder im Hintergrund."
 
 msgctxt "#30848"
 msgid "Enter your personal API key from Fanart.tv."
 msgstr "Den persönlichen API-Schlüssel von Fanart.tv eingeben."
 
 msgctxt "#30849"
-msgid "For thumbs, posters and clearlogos: Fanart.tv in this language, Fanart.tv in English, TMDb in this language, TMDb in English, then Plex. 'auto' uses Kodi's language."
-msgstr "Für Thumbs, Poster und Clearlogos: Fanart.tv in dieser Sprache, Fanart.tv auf Englisch, TMDb in dieser Sprache, TMDb auf Englisch, danach Plex. „auto“ übernimmt die Kodi-Sprache."
+msgid "For thumbs, posters and clearlogos: Fanart.tv in this language, Fanart.tv in English, TMDb in this language, TMDb in English, then Plex. Fanart uses only language-neutral TMDb wallpapers, then Plex. 'auto' uses Kodi's language."
+msgstr "Für Thumbs, Poster und Clearlogos: Fanart.tv in dieser Sprache, Fanart.tv auf Englisch, TMDb in dieser Sprache, TMDb auf Englisch, danach Plex. Fanart verwendet nur sprachneutrale TMDb-Wallpaper und danach Plex. „auto“ übernimmt die Kodi-Sprache."
 
 msgctxt "#30850"
 msgid "TMDb API key or Read Access Token (optional)"

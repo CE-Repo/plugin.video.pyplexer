@@ -4,6 +4,7 @@
 
 import copy
 import hashlib
+import json
 import re
 import threading
 import time
@@ -28,7 +29,9 @@ TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/original'
 THUMB_ATTRIBUTE = 'pyplexerFanartThumb'
 POSTER_ATTRIBUTE = 'pyplexerExternalPoster'
 CLEARLOGO_ATTRIBUTE = 'pyplexerExternalClearlogo'
+TMDB_BACKGROUNDS_ATTRIBUTE = 'pyplexerExternalTmdbBackgrounds'
 ARTWORK_KINDS = ('thumb', 'poster', 'clearlogo')
+BACKGROUND_LIMIT = 5
 MAX_WORKERS = 4
 SYNC_ITEM_LIMIT = 20
 BACKGROUND_BATCH_SIZE = 40
@@ -193,6 +196,28 @@ def select_tmdb_thumb(images, language):
     return TMDB_IMAGE_BASE + path if path else ''
 
 
+def select_tmdb_wallpapers(images):
+    """Return the five best-rated language-neutral TMDb backdrops."""
+    images = [image for image in (images or [])
+              if isinstance(image, dict) and image.get('file_path') and
+              (image.get('iso_639_1') is None or
+               str(image.get('iso_639_1') or '').lower() in ('', '00'))]
+
+    def sort_key(image):
+        pixels = _number(image.get('width')) * _number(image.get('height'))
+        return (-_number(image.get('vote_average')),
+                -_number(image.get('vote_count')),
+                -pixels,
+                str(image.get('file_path') or ''))
+
+    urls = []
+    for image in sorted(images, key=sort_key):
+        url = TMDB_IMAGE_BASE + (image.get('file_path') or '')
+        if url not in urls:
+            urls.append(url)
+    return urls[:BACKGROUND_LIMIT]
+
+
 def select_tmdb_clearlogo(images, language):
     """Choose the best-rated TMDb clearlogo in exactly one language."""
     return select_tmdb_thumb(images, language)
@@ -208,7 +233,23 @@ def _empty_artwork():
         'thumb': ('', ''),
         'poster': ('', ''),
         'clearlogo': ('', ''),
+        'background': ([], []),
     }
+
+
+def external_tmdb_backgrounds(data):
+    """Read resolved TMDb backgrounds from a Plex XML node."""
+    value = data.get(TMDB_BACKGROUNDS_ATTRIBUTE) if data is not None else ''
+    if not value:
+        return []
+    try:
+        backgrounds = json.loads(value)
+    except (TypeError, ValueError):
+        return []
+    if not isinstance(backgrounds, list):
+        return []
+    return [url for url in backgrounds[:BACKGROUND_LIMIT]
+            if isinstance(url, str) and url.startswith(('http://', 'https://'))]
 
 
 class FanartTvClient:
@@ -249,6 +290,8 @@ class FanartTvClient:
             'thumb': tuple(value.get('thumb') or ('', '')),
             'poster': tuple(value.get('poster') or ('', '')),
             'clearlogo': tuple(value.get('clearlogo') or ('', '')),
+            # Fanart.tv is intentionally not used for backgrounds.
+            'background': ([], []),
         }
 
     def cached_artwork(self, media_type, provider, identifier):
@@ -265,6 +308,7 @@ class FanartTvClient:
             'thumb': artwork['thumb'],
             'poster': artwork['poster'],
             'clearlogo': artwork['clearlogo'],
+            'background': ([], []),
         })
 
     def artwork(self, media_type, provider, identifier):
@@ -333,6 +377,7 @@ class FanartTvClient:
             'clearlogo': (
                 select_thumb(logos, self.preferred_language),
                 select_thumb(logos, 'en')),
+            'background': ([], []),
         }
         self._store(cache_name, artwork)
         return artwork
@@ -394,7 +439,7 @@ class TmdbClient:
         identity = '|'.join('%s:%s' % (key, identifiers[key])
                             for key in sorted(identifiers))
         return self.cache.sha512_cache_name(
-            'tmdb_artwork_v4', media_type, '%s:%s:%s' %
+            'tmdb_artwork_v7', media_type, '%s:%s:%s' %
             (identity, self.preferred_language, self.credential_namespace))
 
     def _cached(self, cache_name):
@@ -410,6 +455,7 @@ class TmdbClient:
             'thumb': tuple(value.get('thumb') or ('', '')),
             'poster': tuple(value.get('poster') or ('', '')),
             'clearlogo': tuple(value.get('clearlogo') or ('', '')),
+            'background': tuple(value.get('background') or ([], [])),
         }
 
     def cached_artwork(self, media_type, identifiers):
@@ -426,6 +472,7 @@ class TmdbClient:
             'thumb': artwork['thumb'],
             'poster': artwork['poster'],
             'clearlogo': artwork['clearlogo'],
+            'background': artwork['background'],
         })
 
     def _resolve_id(self, media_type, identifiers):
@@ -470,7 +517,7 @@ class TmdbClient:
         success, payload = self._request_json(
             '/%s/%s/images' % (resource, quote(str(tmdb_id), safe='')),
             {'language': self.preferred_language,
-             'include_image_language': 'en'})
+             'include_image_language': 'en,null'})
         if not success:
             return _empty_artwork()
         artwork = {
@@ -486,6 +533,8 @@ class TmdbClient:
                 select_tmdb_clearlogo(payload.get('logos'),
                                       self.preferred_language),
                 select_tmdb_clearlogo(payload.get('logos'), 'en')),
+            'background': (
+                select_tmdb_wallpapers(payload.get('backdrops')), []),
         }
         self._store(cache_name, artwork)
         return artwork
@@ -504,6 +553,8 @@ def _choose_artwork(fanart_artwork, tmdb_artwork):
         tmdb_preferred, tmdb_english = tmdb_artwork[kind]
         selected[kind] = (fanart_preferred or fanart_english or
                           tmdb_preferred or tmdb_english or '')
+    tmdb_wallpapers, _ = tmdb_artwork['background']
+    selected['background'] = list(tmdb_wallpapers)[:BACKGROUND_LIMIT]
     return selected
 
 
@@ -523,10 +574,9 @@ def _fetch_external_artwork(fanart_client, tmdb_client, media_type,
             LOG.debug('Unexpected Fanart.tv error for %s %s: %s' %
                       (media_type, identifier, error))
 
-    needs_tmdb = any(not (fanart_artwork[kind][0] or
-                          fanart_artwork[kind][1])
-                     for kind in ARTWORK_KINDS)
-    if tmdb_client is not None and needs_tmdb:
+    # TMDb is always consulted when configured because it is the sole
+    # external source for fanart backgrounds.
+    if tmdb_client is not None:
         try:
             tmdb_artwork = tmdb_client.artwork(media_type, identifiers)
         except Exception as error:  # pylint: disable=broad-except
@@ -552,10 +602,7 @@ def _cached_external_artwork(fanart_client, tmdb_client, media_type,
             # preferred/English result is known.
             return _choose_artwork(_empty_artwork(), _empty_artwork()), False
 
-    needs_tmdb = any(not (fanart_artwork[kind][0] or
-                          fanart_artwork[kind][1])
-                     for kind in ARTWORK_KINDS)
-    if tmdb_client is not None and needs_tmdb:
+    if tmdb_client is not None:
         found, tmdb_artwork = tmdb_client.cached_artwork(
             media_type, identifiers)
         if not found:
@@ -647,7 +694,7 @@ def artwork_queue_pending():
 
 
 def prefer_artwork(context, elements, media_type, server=None):
-    """Resolve localized thumbs, posters and logos in the fallback order."""
+    """Resolve localized artwork and TMDb-only fanart backgrounds."""
     elements = list(elements)
     if not elements or media_type not in ('movie', 'show'):
         return
@@ -674,7 +721,7 @@ def prefer_artwork(context, elements, media_type, server=None):
     unique = {}
     for _, identifiers in identified:
         identity = tuple(sorted(identifiers.items()))
-        unique[identity] = ('', '', '')
+        unique[identity] = ('', '', '', [])
 
     if len(unique) > SYNC_ITEM_LIMIT:
         queue = ArtworkQueue()
@@ -684,7 +731,7 @@ def prefer_artwork(context, elements, media_type, server=None):
             artwork, complete = _cached_external_artwork(
                 fanart_client, tmdb_client, media_type, identifiers)
             unique[identity] = (artwork['thumb'], artwork['poster'],
-                                artwork['clearlogo'])
+                                artwork['clearlogo'], artwork['background'])
             if not complete and queue.enqueue(media_type, identifiers):
                 queued += 1
         LOG.debug('Large %s list: cache-only artwork, %s job(s) queued' %
@@ -694,7 +741,7 @@ def prefer_artwork(context, elements, media_type, server=None):
             artwork = _fetch_external_artwork(
                 fanart_client, tmdb_client, media_type, dict(identity))
             return identity, (artwork['thumb'], artwork['poster'],
-                              artwork['clearlogo'])
+                              artwork['clearlogo'], artwork['background'])
 
         workers = min(MAX_WORKERS, len(unique))
         with ThreadPoolExecutor(max_workers=workers) as executor:
@@ -704,9 +751,11 @@ def prefer_artwork(context, elements, media_type, server=None):
     thumbs_applied = 0
     posters_applied = 0
     logos_applied = 0
+    backgrounds_applied = 0
     for element, identifiers in identified:
         identity = tuple(sorted(identifiers.items()))
-        thumb, poster, clearlogo = unique.get(identity, ('', '', ''))
+        thumb, poster, clearlogo, backgrounds = unique.get(
+            identity, ('', '', '', []))
         if thumb:
             element.set(THUMB_ATTRIBUTE, thumb)
             thumbs_applied += 1
@@ -716,10 +765,15 @@ def prefer_artwork(context, elements, media_type, server=None):
         if clearlogo:
             element.set(CLEARLOGO_ATTRIBUTE, clearlogo)
             logos_applied += 1
+        if backgrounds:
+            element.set(TMDB_BACKGROUNDS_ATTRIBUTE, json.dumps(
+                backgrounds, separators=(',', ':')))
+            backgrounds_applied += 1
 
-    LOG.debug('External thumbs/posters/logos applied to %s/%s/%s of %s %s '
-              'item(s)' % (thumbs_applied, posters_applied, logos_applied,
-                           len(elements), media_type))
+    LOG.debug('External thumbs/posters/logos/TMDb backgrounds applied to '
+              '%s/%s/%s/%s of %s %s item(s)' %
+              (thumbs_applied, posters_applied, logos_applied,
+               backgrounds_applied, len(elements), media_type))
 
 
 def prefer_thumbs(context, elements, media_type, server=None):

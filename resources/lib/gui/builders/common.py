@@ -6,6 +6,7 @@ from urllib.parse import quote_plus
 from artwork.fanart_tv import CLEARLOGO_ATTRIBUTE
 from artwork.fanart_tv import POSTER_ATTRIBUTE
 from artwork.fanart_tv import THUMB_ATTRIBUTE
+from artwork.fanart_tv import external_tmdb_backgrounds
 from core.logger import Logger
 from playback.quality import describe_short
 from playback.quality import kodi_audio_codec
@@ -163,29 +164,35 @@ def get_clearlogo_image(context, server, data):
     return ''
 
 
-def get_fanart_image(context, server, data, width=1280, height=720):
-    """
-        Simply take a URL or path and determine how to format for fanart
-        @ input: elementTree element, server name
-        @ return formatted URL for photo resizing
-    """
+def get_fanart_images(context, server, data, width=1280, height=720):
+    """Return up to five TMDb backgrounds, then Plex's background."""
     if context.settings.skip_images():
-        return ''
+        return []
+
+    backgrounds = external_tmdb_backgrounds(data)
+    if backgrounds:
+        return backgrounds
 
     fanart = data.get('art', '')
 
     if fanart.startswith('http'):
-        return fanart
+        return [fanart]
 
     if fanart.startswith('/'):
         if context.settings.full_resolution_fanart():
-            return server.get_kodi_header_formatted_url(fanart)
+            return [server.get_kodi_header_formatted_url(fanart)]
 
-        return server.get_kodi_header_formatted_url('/photo/:/transcode?url=%s&width=%s&height=%s' %
-                                                    (quote_plus('http://localhost:32400' + fanart),
-                                                     width, height))
+        return [server.get_kodi_header_formatted_url(
+            '/photo/:/transcode?url=%s&width=%s&height=%s' %
+            (quote_plus('http://localhost:32400' + fanart), width, height))]
 
-    return ''
+    return []
+
+
+def get_fanart_image(context, server, data, width=1280, height=720):
+    """Return the primary TMDb fanart, then Plex's background."""
+    images = get_fanart_images(context, server, data, width, height)
+    return images[0] if images else ''
 
 
 def _as_int(value, fallback=0):

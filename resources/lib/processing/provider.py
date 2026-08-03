@@ -19,6 +19,7 @@ from infotagger.listitem import ListItemInfoTag  # pylint: disable=import-error
 from artwork.fanart_tv import CLEARLOGO_ATTRIBUTE
 from artwork.fanart_tv import POSTER_ATTRIBUTE
 from artwork.fanart_tv import THUMB_ATTRIBUTE
+from artwork.fanart_tv import external_tmdb_backgrounds
 from artwork.fanart_tv import external_id
 from artwork.fanart_tv import is_configured
 from artwork.fanart_tv import prefer_artwork
@@ -389,7 +390,11 @@ def _art(base, token, node):
         clearlogo_url = _image_url(base, token, clearlogo)
         art['clearlogo'] = clearlogo_url
         art['logo'] = clearlogo_url
-    fanart = node.get('art')
-    if fanart:
-        art['fanart'] = _image_url(base, token, fanart)
+    backgrounds = external_tmdb_backgrounds(node)
+    for index, background in enumerate(backgrounds[:5]):
+        art['fanart' if index == 0 else 'fanart%s' % index] = background
+    if not backgrounds:
+        fanart = node.get('art')
+        if fanart:
+            art['fanart'] = _image_url(base, token, fanart)
     return art

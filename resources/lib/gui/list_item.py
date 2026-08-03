@@ -127,6 +127,7 @@ def _get_info(item):
 
 def _get_art(item):
     fanart = item.extra.get('fanart_image', '')
+    fanarts = item.extra.get('fanart_images') or ([fanart] if fanart else [])
     landscape = item.extra.get('landscape', '')
     thumb = item.extra.get('thumb', '')
     banner = item.extra.get('banner', '')
@@ -136,8 +137,9 @@ def _get_art(item):
     # Only set art that actually exists so Kodi/the skin can fall back to its
     # native defaults (DefaultFolder.png, skin background, ...) for menu items
     art = {}
-    if fanart:
-        art['fanart'] = fanart
+    for index, image in enumerate(fanarts[:5]):
+        if image:
+            art['fanart' if index == 0 else 'fanart%s' % index] = image
     if landscape:
         art['landscape'] = landscape
     if banner:

@@ -157,9 +157,10 @@ A few worth knowing about:
   `All seasons`.
 - **Episode sort method** (*Look and Feel*) — `Kodi` sorts by season and
   episode, `Plex` keeps the order the server sends.
-- **Prefer external thumbs, posters and clearlogos** (*Look and Feel*) — uses
-  localized wide artwork, portrait posters and transparent title logos for
-  movies and TV shows. For all three image types, the order is Fanart.tv in
+- **Prefer external artwork and TMDb fanart** (*Look and Feel*) — uses
+  localized wide artwork, portrait posters, transparent title logos and up to
+  five TMDb backdrops for movies and TV shows. For thumbs, posters and
+  clearlogos, the order is Fanart.tv in
   the preferred language, Fanart.tv in English, TMDb in the preferred
   language, TMDb in English, and finally Plex.
   Fanart.tv requires
@@ -170,7 +171,10 @@ A few worth knowing about:
   language, while a two-letter code such as `de` or `en` overrides it. API
   errors advance to the next fallback and results are cached for seven days.
   Thumbs are exposed as Kodi `landscape` artwork; portrait views use the
-  resolved external poster. Plex listings are loaded server-side in
+  resolved external poster. Fanart uses only the five best-rated,
+  language-neutral TMDb wallpapers, with the Plex background as fallback.
+  They are exposed as Kodi `fanart`, `fanart1`, through `fanart4`.
+  Plex listings are loaded server-side in
   pages of at most 100 entries, including libraries, collections, seasons,
   episodes, search results and channels. Watchlist and Discover keep their
   native provider behavior. Lists of up to 20 titles resolve missing artwork
