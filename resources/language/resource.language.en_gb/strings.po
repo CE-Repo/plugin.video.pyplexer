@@ -1700,5 +1700,5 @@ msgid "Plex could not match this title"
 msgstr ""
 
 msgctxt "#30838"
-msgid "Already in Plex Watchlist"
+msgid "Already in the Watchlist"
 msgstr ""

@@ -228,7 +228,7 @@ STRINGS = {
     'Mb/s': 30833,
     'Could not identify this title': 30835,
     'Plex could not match this title': 30836,
-    'Already in Plex Watchlist': 30838,
+    'Already in the Watchlist': 30838,
 }
 
 

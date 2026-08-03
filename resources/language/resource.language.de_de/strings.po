@@ -1631,11 +1631,11 @@ msgstr "Von Merkliste entfernen"
 
 msgctxt "#30820"
 msgid "Added to Watchlist"
-msgstr "Zur Merkliste erfolgreich hinzugefügt"
+msgstr "Zur Merkliste hinzugefügt"
 
 msgctxt "#30821"
 msgid "Removed from Watchlist"
-msgstr "Aus Plex Merkliste erfolgreich entfernt"
+msgstr "Von Merkliste entfernt"
 
 msgctxt "#30822"
 msgid "Could not update Watchlist"
@@ -1663,7 +1663,7 @@ msgstr "Bessere Qualität verfügbar"
 
 msgctxt "#30828"
 msgid "Searching for a better quality..."
-msgstr "Suche nach besserer Qualität ..."
+msgstr "Suche nach besserer Qualität..."
 
 msgctxt "#30829"
 msgid "Current version"
@@ -1694,8 +1694,8 @@ msgid "Plex could not match this title"
 msgstr "Plex konnte diesen Titel nicht zuordnen"
 
 msgctxt "#30838"
-msgid "Already in Plex Watchlist"
-msgstr "Ist bereits in der Plex Merkliste"
+msgid "Already in the Watchlist"
+msgstr "Bereits in der Merkliste vorhanden"
 
 #~ msgctxt "#30689"
 #~ msgid "Up Next requires Kodi 18 or higher"

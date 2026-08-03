@@ -746,7 +746,7 @@ class QualitySearch:
         try:
             progress.create(CONFIG['name'],
                             i18n_or('Searching for a better quality...',
-                                    'Suche nach besserer Qualität ...'))
+                                    'Suche nach besserer Qualität...'))
         except Exception:  # pylint: disable=broad-except
             progress = None
 

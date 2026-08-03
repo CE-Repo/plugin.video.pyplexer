@@ -105,10 +105,10 @@ def _watchlist_result(success, add):
 
     if success and add:
         message = i18n_or('Added to Watchlist',
-                          'Zur Merkliste erfolgreich hinzugefügt')
+                          'Zur Merkliste hinzugefügt')
     elif success:
         message = i18n_or('Removed from Watchlist',
-                          'Aus Plex Merkliste erfolgreich entfernt')
+                          'Von Merkliste entfernt')
     else:
         message = i18n_or('Could not update Watchlist',
                           'Merkliste konnte nicht aktualisiert werden')
@@ -117,8 +117,8 @@ def _watchlist_result(success, add):
 
 
 def _watchlist_already_added():
-    message = i18n_or('Already in Plex Watchlist',
-                      'Ist bereits in der Plex Merkliste')
+    message = i18n_or('Already in the Watchlist',
+                      'Bereits in der Merkliste vorhanden')
     xbmcgui.Dialog().notification(heading=CONFIG['name'], message=message,
                                   icon=CONFIG['icon'])
 
