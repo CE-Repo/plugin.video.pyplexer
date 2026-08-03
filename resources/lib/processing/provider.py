@@ -99,7 +99,7 @@ def _iter_nodes(tree):
 
 
 def _attach_summaries(context, base, nodes):
-    """Fill in plots, external ids and Plex logos provider listings omit.
+    """Fill plots, genres, external ids and logos provider listings omit.
 
     The Watchlist answers with the tagline but without the summary; the
     metadata of the items has it.  Plex takes several rating keys in one go, so
@@ -112,6 +112,8 @@ def _attach_summaries(context, base, nodes):
         if not node.get('ratingKey'):
             return False
         if not node.get('summary'):
+            return True
+        if not node.findall('Genre'):
             return True
         if not use_external_artwork:
             return False
@@ -162,6 +164,9 @@ def _attach_summaries(context, base, nodes):
         if not node.findall('Guid'):
             for guid in detail.findall('Guid'):
                 node.append(copy.copy(guid))
+        if not node.findall('Genre'):
+            for genre in detail.findall('Genre'):
+                node.append(copy.copy(genre))
         if not node.get('clearLogo') and detail.get('clearLogo'):
             node.set('clearLogo', detail.get('clearLogo'))
         has_clearlogo = any((image.get('type') or '').lower() == 'clearlogo'
