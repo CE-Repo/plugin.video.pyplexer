@@ -4,6 +4,7 @@ import time
 
 import xbmcplugin  # pylint: disable=import-error
 
+from artwork.fanart_tv import prefer_thumbs
 from core.common import get_handle
 from core.context import Item
 from core.logger import Logger
@@ -38,8 +39,9 @@ def process_movies(context, url, tree=None):
     # a widget row or a collection fits in one lookup, so the flags say Dolby
     # Vision Profile 7 and not just Dolby Vision; a whole library page is left
     # alone by the lookup itself
-    attach_media_streams(server, [branch for branch in branches
-                                  if branch.tag.lower() == 'video'])
+    videos = [branch for branch in branches if branch.tag.lower() == 'video']
+    attach_media_streams(server, videos)
+    prefer_thumbs(context, videos, 'movie', server)
 
     for branch in branches:
         item = Item(server, url, tree, branch)

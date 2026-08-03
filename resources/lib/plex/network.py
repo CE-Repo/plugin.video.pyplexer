@@ -608,8 +608,8 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
         wanted = len(rating_keys.split(','))
 
         data = self.talk_to_provider(
-            base, '/library/metadata/%s?X-Plex-Container-Start=0&X-Plex-Container-Size=%s' %
-            (rating_keys, wanted))
+            base, '/library/metadata/%s?includeGuids=1&X-Plex-Container-Start=0'
+                  '&X-Plex-Container-Size=%s' % (rating_keys, wanted))
 
         return self._parse_provider_xml(data)
 

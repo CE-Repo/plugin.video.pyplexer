@@ -73,6 +73,18 @@ class AddonSettings:  # pylint: disable=too-many-public-methods
     def full_resolution_fanart(self):
         return self._get_setting('fullres_fanart')
 
+    def fanart_preferred(self):
+        return self._get_setting('fanart_preferred')
+
+    def fanart_personal_key(self):
+        return self._get_setting('fanart_personal_key')
+
+    def tmdb_api_key(self):
+        return self._get_setting('tmdb_api_key')
+
+    def fanart_language(self):
+        return self._get_setting('fanart_language')
+
     def force_dvd(self):
         return self._get_setting('forcedvd')
 

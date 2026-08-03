@@ -127,6 +127,7 @@ def _get_info(item):
 
 def _get_art(item):
     fanart = item.extra.get('fanart_image', '')
+    landscape = item.extra.get('landscape', '')
     thumb = item.extra.get('thumb', '')
     banner = item.extra.get('banner', '')
     clearlogo = item.extra.get('clearlogo', '')
@@ -137,6 +138,8 @@ def _get_art(item):
     art = {}
     if fanart:
         art['fanart'] = fanart
+    if landscape:
+        art['landscape'] = landscape
     if banner:
         art['banner'] = banner
     if clearlogo:

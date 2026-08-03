@@ -867,6 +867,60 @@
                     <control type="toggle"/>
                 </setting>
             </group>
+            <group id="4" label="30841">
+                <setting id="fanart_preferred" type="boolean" label="30842" help="30846">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="fanart_personal_key" type="string" label="30844" help="30848">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="enable">
+                            <condition operator="is" setting="fanart_preferred">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="edit" format="string">
+                        <heading>30844</heading>
+                        <hidden>true</hidden>
+                    </control>
+                </setting>
+                <setting id="tmdb_api_key" type="string" label="30850" help="30851">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="enable">
+                            <condition operator="is" setting="fanart_preferred">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="edit" format="string">
+                        <heading>30850</heading>
+                        <hidden>true</hidden>
+                    </control>
+                </setting>
+                <setting id="fanart_language" type="string" label="30845" help="30849">
+                    <level>0</level>
+                    <default>auto</default>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="enable">
+                            <condition operator="is" setting="fanart_preferred">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="edit" format="string">
+                        <heading>30845</heading>
+                    </control>
+                </setting>
+            </group>
         </category>
         <category id="kodi library" label="30796" help="">
             <group id="1">

@@ -130,7 +130,7 @@ PyPlexer.
 | --- | --- |
 | Server | Discovery, manual address, HTTPS, myPlex, master server, Wake On LAN |
 | Playback | Stream source, audio/subtitle selection, DVD, SMB overrides, intro skipping, lyrics, transcoding, better quality search |
-| Look and Feel | Menus shown, season flattening, episode sorting, server name prefixes, Recently Added counts, context menus |
+| Look and Feel | Menus shown, season flattening, episode sorting, server name prefixes, Recently Added counts, context menus, Fanart.tv thumbs |
 | Kodi Library | Which sections are exported to the Kodi library |
 | Up Next | Up Next integration and its notification encoding |
 | Companion Receiver | The Plex Companion listener and Kodi's web server credentials |
@@ -157,6 +157,16 @@ A few worth knowing about:
   `All seasons`.
 - **Episode sort method** (*Look and Feel*) — `Kodi` sorts by season and
   episode, `Plex` keeps the order the server sends.
+- **Prefer external thumbs** (*Look and Feel*) — uses wide localized artwork for
+  movies and TV shows. The order is Fanart.tv in the preferred language, TMDb
+  in that language, Fanart.tv in English, and finally Plex. Fanart.tv requires
+  a [personal API key](https://fanart.tv/get-an-api-key/). The TMDb API key or
+  Read Access Token is optional; without it the TMDb step is skipped. On
+  Fanart.tv the most-liked thumb in the requested language wins; TMDb chooses
+  the best-rated matching backdrop. `auto` uses Kodi's language, while a
+  two-letter code such as `de` or `en` overrides it. API errors advance to the
+  next fallback and results are cached for seven days. Thumbs are exposed as Kodi
+  `landscape` artwork; poster views continue to display Plex's portrait poster.
 - **Server name prefix on the main menu** (*Look and Feel*) — `Default` adds the
   server name only when more than one server is present, `Always` adds it even
   with a single server.

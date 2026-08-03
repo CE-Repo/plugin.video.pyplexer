@@ -10,6 +10,7 @@ from core.strings import i18n
 from gui.builders.common import get_banner_image
 from gui.builders.common import get_clearlogo_image
 from gui.builders.common import get_fanart_image
+from gui.builders.common import get_landscape_image
 from gui.builders.common import get_metadata
 from gui.builders.common import get_thumb_image
 from gui.builders.common import is_watchlisted
@@ -56,6 +57,7 @@ def create_show_item(context, item, library=False):
         'TotalEpisodes': info_labels['episode'],
         'thumb': get_thumb_image(context, item.server, item.data),
         'fanart_image': get_fanart_image(context, item.server, item.data),
+        'landscape': get_landscape_image(context, item.data),
         'clearlogo': get_clearlogo_image(context, item.server, item.data),
         'banner': get_banner_image(context, item.server, item.data),
         'key': item.data.get('key', ''),

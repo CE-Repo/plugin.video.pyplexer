@@ -2,6 +2,7 @@
 
 import xbmcplugin  # pylint: disable=import-error
 
+from artwork.fanart_tv import prefer_thumbs
 from core.common import get_handle
 from core.context import Item
 from core.utils import get_xml
@@ -28,7 +29,8 @@ def process_shows(context, url, tree=None):
     items = []
     append_item = items.append
     # For each directory tag we find
-    shows = tree.iter('Directory')
+    shows = list(tree.iter('Directory'))
+    prefer_thumbs(context, shows, 'show', server)
 
     for show in shows:
         item = Item(server, url, tree, show)

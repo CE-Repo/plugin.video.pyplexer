@@ -8,6 +8,7 @@ listing (posters + metadata) rather than being played directly. Containers
 (hubs, shows, seasons) become folders that drill deeper via MODES.PROVIDERBROWSE.
 """
 
+import copy
 from urllib.parse import quote
 
 import xbmcgui  # pylint: disable=import-error
@@ -15,6 +16,10 @@ import xbmcplugin  # pylint: disable=import-error
 
 from infotagger.listitem import ListItemInfoTag  # pylint: disable=import-error
 
+from artwork.fanart_tv import THUMB_ATTRIBUTE
+from artwork.fanart_tv import external_id
+from artwork.fanart_tv import is_configured
+from artwork.fanart_tv import prefer_thumbs
 from core.common import get_argv
 from core.common import get_current_plugin_url
 from core.common import get_handle
@@ -56,6 +61,10 @@ def process_provider(context, base, tree, in_watchlist=False):
 
     nodes = list(_iter_nodes(tree))
     _attach_summaries(context, base, nodes)
+    prefer_thumbs(context, [node for node in nodes
+                            if (node.get('type') or '').lower() == 'movie'], 'movie')
+    prefer_thumbs(context, [node for node in nodes
+                            if (node.get('type') or '').lower() == 'show'], 'show')
     watchlist_ids = (set() if in_watchlist else
                      context.plex_network.get_provider_watchlist_ids())
 
@@ -88,20 +97,32 @@ def _iter_nodes(tree):
 
 
 def _attach_summaries(context, base, nodes):
-    """Fill in the plot the listing did not carry.
+    """Fill in plots and external ids that provider listings omit.
 
     The Watchlist answers with the tagline but without the summary; the
     metadata of the items has it.  Plex takes several rating keys in one go, so
     a whole page costs a single request.  Anything that does not come back is
     simply left without a plot.
     """
-    missing = [node for node in nodes
-               if not node.get('summary') and node.get('ratingKey')]
+    use_fanart = is_configured(context.settings)
+
+    def needs_details(node):
+        if not node.get('ratingKey'):
+            return False
+        if not node.get('summary'):
+            return True
+        if not use_fanart:
+            return False
+        node_type = (node.get('type') or '').lower()
+        return (node_type in ('movie', 'show') and
+                not external_id(node, node_type)[1])
+
+    missing = [node for node in nodes if needs_details(node)]
 
     if not missing:
         return
 
-    summaries = {}
+    details = {}
 
     # a long Watchlist is asked for in batches rather than in one huge URL
     for offset in range(0, len(missing), SUMMARY_BATCH_SIZE):
@@ -113,21 +134,26 @@ def _attach_summaries(context, base, nodes):
             LOG.debug('No summaries for %s item(s)' % len(batch))
             continue
 
-        before = len(summaries)
+        before = len(details)
         for element in tree.iter():
             rating_key = element.get('ratingKey')
-            if rating_key and element.get('summary'):
-                summaries[str(rating_key)] = element.get('summary')
+            if rating_key:
+                details[str(rating_key)] = element
 
         LOG.debug('Summary batch: asked for %s, answered with %s' %
-                  (len(batch), len(summaries) - before))
+                  (len(batch), len(details) - before))
 
     filled = 0
     for node in missing:
-        summary = summaries.get(str(node.get('ratingKey')))
-        if summary:
-            node.set('summary', summary)
+        detail = details.get(str(node.get('ratingKey')))
+        if detail is None:
+            continue
+        if not node.get('summary') and detail.get('summary'):
+            node.set('summary', detail.get('summary'))
             filled += 1
+        if not node.findall('Guid'):
+            for guid in detail.findall('Guid'):
+                node.append(copy.copy(guid))
 
     LOG.debug('Summary filled in for %s of %s item(s)' % (filled, len(missing)))
 
@@ -323,6 +349,9 @@ def _art(base, token, node):
         thumb_url = _image_url(base, token, thumb)
         art['thumb'] = thumb_url
         art['poster'] = thumb_url
+    fanart_thumb = node.get(THUMB_ATTRIBUTE)
+    if fanart_thumb:
+        art['landscape'] = fanart_thumb
     fanart = node.get('art')
     if fanart:
         art['fanart'] = _image_url(base, token, fanart)

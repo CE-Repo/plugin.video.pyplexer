@@ -3,6 +3,7 @@
 import xml.etree.ElementTree as ETree
 from urllib.parse import quote_plus
 
+from artwork.fanart_tv import THUMB_ATTRIBUTE
 from core.logger import Logger
 from playback.quality import describe_short
 from playback.quality import kodi_audio_codec
@@ -92,6 +93,13 @@ def get_thumb_image(context, server, data, width=720, height=720):
 
     # No Plex thumbnail: return empty so Kodi/the skin uses its native default art
     return ''
+
+
+def get_landscape_image(context, data):
+    """Return the wide Fanart.tv thumb pre-resolved for a video item."""
+    if context.settings.skip_images():
+        return ''
+    return data.get(THUMB_ATTRIBUTE, '')
 
 
 def get_banner_image(context, server, data, width=720, height=720):
