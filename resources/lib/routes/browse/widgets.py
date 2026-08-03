@@ -8,6 +8,7 @@ from core.context import GUIItem
 from core.strings import i18n
 from gui.list_item import create_gui_item
 from plex.network import Plex
+from processing.pagination import paginate_local_items
 
 
 def run(context, url):
@@ -26,6 +27,8 @@ def run(context, url):
 
     if items:
         items += all_server_widgets(context)
+
+    items = paginate_local_items(context, items)
 
     if items:
         xbmcplugin.addDirectoryItems(get_handle(), items, len(items))

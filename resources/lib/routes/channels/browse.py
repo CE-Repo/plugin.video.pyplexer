@@ -10,13 +10,15 @@ from core.utils import get_xml
 from gui.builders.common import get_link_url
 from gui.list_item import create_gui_item
 from plex.network import Plex
+from processing.pagination import add_page_navigation
+from processing.pagination import paged_listing_url
 
 
 def run(context, url):
     context.plex_network = Plex(context.settings, load=True)
     server = context.plex_network.get_server_from_url(url)
 
-    tree = get_xml(context, url)
+    tree = get_xml(context, paged_listing_url(context, url))
     if tree is None:
         return
 
@@ -57,6 +59,8 @@ def run(context, url):
 
         gui_item = GUIItem(p_url, details, extra_data)
         append_item(create_gui_item(context, gui_item))
+
+    add_page_navigation(context, url, tree, items)
 
     if items:
         xbmcplugin.addDirectoryItems(get_handle(), items, len(items))

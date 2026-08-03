@@ -14,6 +14,8 @@ from gui.builders.movie import create_movie_item
 from gui.builders.playlist import create_playlist_item
 from gui.builders.track import create_track_item
 from gui.list_item import create_gui_item
+from processing.pagination import add_page_navigation
+from processing.pagination import paged_listing_url
 
 
 def process_xml(context, url, tree=None):
@@ -26,7 +28,7 @@ def process_xml(context, url, tree=None):
     """
 
     server = context.plex_network.get_server_from_url(url)
-    tree = get_xml(context, url, tree)
+    tree = get_xml(context, paged_listing_url(context, url), tree)
 
     if tree is None:
         return
@@ -82,6 +84,8 @@ def process_xml(context, url, tree=None):
 
             content_type = 'videos'
             append_item(create_movie_item(context, item))
+
+    add_page_navigation(context, url, tree, items)
 
     if items:
         _set_content(content_type)

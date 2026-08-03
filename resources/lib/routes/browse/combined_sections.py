@@ -9,6 +9,7 @@ from core.logger import Logger
 from core.strings import i18n
 from gui.list_item import create_gui_item
 from plex.network import Plex
+from processing.pagination import paginate_local_items
 
 LOG = Logger()
 
@@ -21,6 +22,8 @@ def run(context):
     LOG.debug('Using list of %s servers: %s' % (len(server_list), server_list))
 
     items = get_menu_items(context)
+
+    items = paginate_local_items(context, items)
 
     if items:
         xbmcplugin.addDirectoryItems(get_handle(), items, len(items))

@@ -15,7 +15,7 @@ from gui.builders.movie import create_movie_item
 from gui.builders.photo import create_photo_item
 from gui.builders.track import create_track_item
 from processing.pagination import add_page_navigation
-from processing.pagination import paged_library_url
+from processing.pagination import paged_listing_url
 
 LOG = Logger()
 
@@ -25,7 +25,7 @@ def process_movies(context, url, tree=None):
     server = context.plex_network.get_server_from_url(url)
 
     request_url = listing_url_with_guids(
-        context.settings, paged_library_url(context, url))
+        context.settings, paged_listing_url(context, url))
     tree = get_xml(context, request_url, tree)
     if tree is None:
         return

@@ -11,6 +11,7 @@ from core.logger import Logger
 from core.strings import i18n
 from gui.list_item import create_gui_item
 from plex.network import Plex
+from processing.pagination import paginate_local_items
 
 LOG = Logger()
 
@@ -36,6 +37,7 @@ def run(context, content_filter=None, display_shared=False):
     items += server_section_menus
 
     if display_shared:
+        items = paginate_local_items(context, items)
         if items:
             xbmcplugin.addDirectoryItems(get_handle(), items, len(items))
 
@@ -85,6 +87,7 @@ def run(context, content_filter=None, display_shared=False):
 
     items += server_additional_menu_items(context, server_list, content_filter, menus)
     items += action_menu_items(context)
+    items = paginate_local_items(context, items)
 
     if items:
         xbmcplugin.addDirectoryItems(get_handle(), items, len(items))

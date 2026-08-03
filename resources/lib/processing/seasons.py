@@ -8,6 +8,8 @@ from core.logger import Logger
 from core.utils import get_xml
 from gui.builders.season import create_season_item
 from processing.episodes import process_episodes
+from processing.pagination import add_page_navigation
+from processing.pagination import paged_listing_url
 
 LOG = Logger()
 
@@ -23,7 +25,7 @@ def process_seasons(context, url, rating_key=None, library=False):
     else:
         server = context.plex_network.get_server_from_url(url)
 
-    tree = get_xml(context, url)
+    tree = get_xml(context, paged_listing_url(context, url))
     if tree is None:
         return
 
@@ -53,6 +55,8 @@ def process_seasons(context, url, rating_key=None, library=False):
 
         item = Item(server, url, tree, season)
         append_item(create_season_item(context, item, library=library))
+
+    add_page_navigation(context, url, tree, items)
 
     if items:
         xbmcplugin.addDirectoryItems(get_handle(), items, len(items))

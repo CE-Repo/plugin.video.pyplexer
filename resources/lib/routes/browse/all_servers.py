@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import xml.etree.ElementTree as ETree
+
 import xbmcplugin  # pylint: disable=import-error
 
 from core.common import get_handle
@@ -11,6 +13,9 @@ from gui.builders.movie import create_movie_item
 from gui.builders.photo import create_photo_item
 from gui.builders.show import create_show_item
 from plex.network import Plex
+from processing.pagination import PAGE_SIZE
+from processing.pagination import add_page_navigation
+from processing.pagination import page_number
 
 LOG = Logger()
 
@@ -23,6 +28,9 @@ def run(context):
 
     content_type = None
     items = []
+    total = 0
+    skip = (page_number(context) - 1) * PAGE_SIZE
+    remaining = PAGE_SIZE
 
     LOG.debug('Using list of %s sections: %s' % (len(all_sections), all_sections))
 
@@ -32,11 +40,29 @@ def run(context):
             if content_type is None:
                 content_type = get_content_type(section)
 
-            items += _list_content(
+            section_items, section_total = _list_content(
                 context,
                 context.plex_network.get_server_from_uuid(section.get_server_uuid()),
-                section.get_path()
+                section.get_path(),
+                skip,
+                max(1, remaining)
             )
+            total += section_total
+
+            if skip >= section_total:
+                skip -= section_total
+                continue
+
+            skip = 0
+            if remaining:
+                items += section_items[:remaining]
+                remaining -= min(remaining, len(section_items))
+
+    container = ETree.Element('MediaContainer', {
+        'size': str(len(items)),
+        'totalSize': str(total),
+    })
+    add_page_navigation(context, 'http://pyplexer/all', container, items)
 
     if items:
         add_sort_methods(content_type)
@@ -110,18 +136,23 @@ def get_content_type(section):
     return 'files'
 
 
-def _list_content(context, server, section):
+def _list_content(context, server, section, start, size):
     section_id = [int(part) for part in section.split('/') if part.isdigit()][0]
 
-    tree = server.get_section_all(section=section_id)
+    tree = server.get_section_all(section=section_id, start=start, size=size)
     if tree is None:
-        return []
+        return [], 0
+
+    try:
+        total = int(tree.get('totalSize') or tree.get('size') or 0)
+    except (TypeError, ValueError):
+        total = 0
 
     iter_type = 'Video' if get_section_type(context) == 'movie' else 'Directory'
     branches = tree.iter(iter_type)
 
     if not branches:
-        return []
+        return [], total
 
     items = []
     for content in branches:
@@ -136,4 +167,4 @@ def _list_content(context, server, section):
         elif content.get('type') == 'photo':
             items.append(create_photo_item(context, item))
 
-    return items
+    return items, max(total, start + len(items))

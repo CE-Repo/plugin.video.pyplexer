@@ -9,7 +9,7 @@ from core.context import Item
 from core.utils import get_xml
 from gui.builders.show import create_show_item
 from processing.pagination import add_page_navigation
-from processing.pagination import paged_library_url
+from processing.pagination import paged_listing_url
 
 
 def process_shows(context, url, tree=None):
@@ -24,7 +24,7 @@ def process_shows(context, url, tree=None):
 
     # Get the URL and server name.  Get the XML and parse
     request_url = listing_url_with_guids(
-        context.settings, paged_library_url(context, url))
+        context.settings, paged_listing_url(context, url))
     tree = get_xml(context, request_url, tree)
     if tree is None:
         return

@@ -18,7 +18,7 @@ from processing.artists import process_artists
 from processing.directories import process_directories
 from processing.episodes import process_episodes
 from processing.movies import process_movies
-from processing.pagination import paged_library_url
+from processing.pagination import paged_listing_url
 from processing.photos import process_photos
 from processing.shows import process_shows
 from processing.tracks import process_tracks
@@ -57,7 +57,7 @@ def run(context, url=None, server_uuid=None, mode=None):
 
     try:
         request_url = listing_url_with_guids(
-            context.settings, paged_library_url(context, url))
+            context.settings, paged_listing_url(context, url))
         tree = get_xml(context, request_url)
         process(context, url, tree, last_bit)
 

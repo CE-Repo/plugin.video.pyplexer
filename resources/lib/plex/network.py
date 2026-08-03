@@ -456,8 +456,14 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
 
         self._discovery_notification(server_names)
 
-    def get_myplex_queue(self):
-        return self.get_processed_myplex_xml('/pms/playlists/queue/all')
+    def get_myplex_queue(self, start=0, size=0):
+        path = '/pms/playlists/queue/all'
+        if size > 0:
+            path = '%s?%s' % (path, urlencode({
+                'X-Plex-Container-Start': start,
+                'X-Plex-Container-Size': size,
+            }))
+        return self.get_processed_myplex_xml(path)
 
     def get_provider_token(self):
         return self.effective_token

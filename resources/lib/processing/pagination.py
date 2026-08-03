@@ -1,32 +1,41 @@
 # -*- coding: utf-8 -*-
 
-"""Server-side pagination for full Plex movie and show libraries."""
+"""Server-side pagination for Plex directory listings."""
 
 import math
-import re
+import xml.etree.ElementTree as ETree
 from urllib.parse import parse_qsl
+from urllib.parse import quote
 from urllib.parse import urlencode
 from urllib.parse import urlsplit
 from urllib.parse import urlunsplit
 
 import xbmcgui  # pylint: disable=import-error
 
-from core.common import get_plugin_url
+from core.constants import CONFIG
 from core.strings import i18n_or
 
 PAGE_SIZE = 100
 
-_LIBRARY_ALL_PATH = re.compile(
-    r'/library/sections/[^/]+/all/?$', re.IGNORECASE)
 _INTERNAL_PARAMETERS = ('command', 'path_mode', 'page')
 
 
-def is_paged_library(url):
-    """Return whether ``url`` is a complete Plex library listing."""
+def is_paged_listing(url):
+    """Return whether ``url`` can represent a remote Plex container."""
     if not url:
         return False
     try:
-        return bool(_LIBRARY_ALL_PATH.search(urlsplit(str(url)).path))
+        parts = urlsplit(str(url))
+        if parts.scheme.lower() not in ('http', 'https'):
+            return False
+        for name, value in parse_qsl(parts.query, keep_blank_values=True):
+            if name.lower() != 'x-plex-container-size':
+                continue
+            try:
+                return int(value) >= PAGE_SIZE
+            except (TypeError, ValueError):
+                return True
+        return True
     except (TypeError, ValueError):
         return False
 
@@ -40,9 +49,9 @@ def page_number(context):
     return max(1, page)
 
 
-def paged_library_url(context, url):
-    """Add Plex container bounds to full-library requests only."""
-    if not is_paged_library(url):
+def paged_listing_url(context, url):
+    """Limit one remote Plex container request to the requested page."""
+    if not is_paged_listing(url):
         return url
 
     parts = urlsplit(str(url))
@@ -78,12 +87,13 @@ def _page_item(context, label, target_page):
         'thumb': 'DefaultFolder.png',
     })
     list_item.setProperty('IsPlayable', 'false')
-    return get_plugin_url(params), list_item, True
+    query = urlencode(params, quote_via=quote)
+    return 'plugin://%s/?%s' % (CONFIG['id'], query), list_item, True
 
 
 def add_page_navigation(context, url, tree, items):
     """Add a next-page folder; Kodi itself provides backwards navigation."""
-    if tree is None or not is_paged_library(url):
+    if tree is None or not is_paged_listing(url):
         return items
 
     current_page = page_number(context)
@@ -110,3 +120,18 @@ def add_page_navigation(context, url, tree, items):
     if next_item:
         items.append(next_item)
     return items
+
+
+def paginate_local_items(context, items):
+    """Slice a list assembled locally and append its next-page folder."""
+    items = list(items)
+    total = len(items)
+    start = (page_number(context) - 1) * PAGE_SIZE
+    page_items = items[start:start + PAGE_SIZE]
+    container = ETree.Element('MediaContainer', {
+        'size': str(len(page_items)),
+        'totalSize': str(total),
+    })
+    add_page_navigation(context, 'http://pyplexer/local', container,
+                        page_items)
+    return page_items

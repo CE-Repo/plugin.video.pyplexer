@@ -9,7 +9,7 @@ from core.utils import attach_media_streams
 from core.utils import get_xml
 from gui.builders.episode import create_episode_item
 from processing.pagination import add_page_navigation
-from processing.pagination import paged_library_url
+from processing.pagination import paged_listing_url
 
 LOG = Logger()
 
@@ -25,7 +25,7 @@ def process_episodes(context, url, tree=None, rating_key=None, library=False):
     else:
         server = context.plex_network.get_server_from_url(url)
 
-    tree = get_xml(context, paged_library_url(context, url), tree)
+    tree = get_xml(context, paged_listing_url(context, url), tree)
     if tree is None:
         return
 

@@ -6,12 +6,14 @@ from core.common import get_handle
 from core.context import Item
 from core.utils import get_xml
 from gui.builders.music import create_music_item
+from processing.pagination import add_page_navigation
+from processing.pagination import paged_listing_url
 
 
 def process_music(context, url, tree=None):
     server = context.plex_network.get_server_from_url(url)
 
-    tree = get_xml(context, url, tree)
+    tree = get_xml(context, paged_listing_url(context, url), tree)
     if tree is None:
         return
 
@@ -26,6 +28,8 @@ def process_music(context, url, tree=None):
 
         item = Item(server, url, tree, music)
         append_item(create_music_item(context, item))
+
+    add_page_navigation(context, url, tree, items)
 
     if items:
         content_type = items[-1][1].getProperty('content_type')

@@ -27,6 +27,7 @@ from playback.quality import media_details
 from playback.quality import normalise_title
 from playback.quality import quality_score
 from plex.network import Plex
+from processing.pagination import paginate_local_items
 
 LOG = Logger()
 
@@ -90,6 +91,8 @@ def run(context):
             elif context.params.get('video_type') == 'episode':
                 item = Item(server, url, tree, search_result)
                 append_item(create_episode_item(context, item))
+
+        items = paginate_local_items(context, items)
 
         if items:
             xbmcplugin.addDirectoryItems(get_handle(), items, len(items))

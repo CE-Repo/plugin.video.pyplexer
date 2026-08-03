@@ -6,6 +6,8 @@ from core.common import get_handle
 from core.context import Item
 from core.utils import get_xml
 from gui.builders.plex_online import create_plex_online_item
+from processing.pagination import add_page_navigation
+from processing.pagination import paged_listing_url
 
 
 def process_plex_online(context, url):
@@ -13,7 +15,7 @@ def process_plex_online(context, url):
 
     server = context.plex_network.get_server_from_url(url)
 
-    tree = get_xml(context, url)
+    tree = get_xml(context, paged_listing_url(context, url))
     if tree is None:
         return
 
@@ -26,6 +28,8 @@ def process_plex_online(context, url):
         item = create_plex_online_item(context, item)
         if item:
             append_item(item)
+
+    add_page_navigation(context, url, tree, items)
 
     if items:
         xbmcplugin.addDirectoryItems(get_handle(), items, len(items))

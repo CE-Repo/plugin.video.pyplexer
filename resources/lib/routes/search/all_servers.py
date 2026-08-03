@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import xml.etree.ElementTree as ETree
+
 import xbmc  # pylint: disable=import-error
 import xbmcplugin  # pylint: disable=import-error
 
@@ -15,6 +17,9 @@ from gui.builders.movie import create_movie_item
 from gui.builders.show import create_show_item
 from gui.builders.track import create_track_item
 from plex.network import Plex
+from processing.pagination import PAGE_SIZE
+from processing.pagination import add_page_navigation
+from processing.pagination import page_number
 
 LOG = Logger()
 
@@ -22,7 +27,8 @@ LOG = Logger()
 def run(context):
     context.plex_network = Plex(context.settings, load=True)
 
-    context.params['query'] = _get_search_query()
+    context.params['query'] = (context.params.get('query') or
+                               _get_search_query())
     if not context.params['query']:
         xbmcplugin.endOfDirectory(get_handle(), succeeded=False, cacheToDisc=False)
         return
@@ -30,7 +36,13 @@ def run(context):
     all_sections = context.plex_network.all_sections()
     LOG.debug('Using list of %s sections: %s' % (len(all_sections), all_sections))
 
-    items = search(context, all_sections)
+    items, total = search(context, all_sections)
+
+    container = ETree.Element('MediaContainer', {
+        'size': str(len(items)),
+        'totalSize': str(total),
+    })
+    add_page_navigation(context, 'http://pyplexer/search', container, items)
 
     if items:
         content_type = get_content_type(context)
@@ -173,17 +185,32 @@ def get_content_type(context):
 
 def search(context, sections):
     results = []
+    total = 0
+    skip = (page_number(context) - 1) * PAGE_SIZE
+    remaining = PAGE_SIZE
     section_type = get_section_type(context)
 
     for section in sections:
         if section.get_type() == section_type:
-            results += _list_content(
+            section_items, section_total = _list_content(
                 context,
                 context.plex_network.get_server_from_uuid(section.get_server_uuid()),
-                section.get_path()
+                section.get_path(),
+                skip,
+                max(1, remaining)
             )
+            total += section_total
 
-    return results
+            if skip >= section_total:
+                skip -= section_total
+                continue
+
+            skip = 0
+            if remaining:
+                results += section_items[:remaining]
+                remaining -= min(remaining, len(section_items))
+
+    return results, total
 
 
 def _get_search_query():
@@ -201,13 +228,19 @@ def _get_search_query():
     return text.strip()
 
 
-def _list_content(context, server, section):
+def _list_content(context, server, section, start, size):
     section_id = [int(part) for part in section.split('/') if part.isdigit()][0]
     item_type = get_item_type(context)
 
-    tree = server.get_search(context.params['query'], item_type, section=section_id)
+    tree = server.get_search(context.params['query'], item_type,
+                             section=section_id, start=start, size=size)
     if tree is None:
-        return []
+        return [], 0
+
+    try:
+        total = int(tree.get('totalSize') or tree.get('size') or 0)
+    except (TypeError, ValueError):
+        total = 0
 
     iter_types = {
         1: 'Video',
@@ -221,7 +254,7 @@ def _list_content(context, server, section):
     branches = tree.iter(iter_types.get(item_type, 'Directory'))
 
     if not branches:
-        return []
+        return [], total
 
     items = []
     for content in branches:
@@ -244,4 +277,4 @@ def _list_content(context, server, section):
         elif content.get('type') == 'track':
             items.append(create_track_item(context, item))
 
-    return items
+    return items, max(total, start + len(items))

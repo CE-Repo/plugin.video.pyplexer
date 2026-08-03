@@ -12,6 +12,7 @@ from processing.music import process_music
 from processing.photos import process_photos
 from processing.plex_online import process_plex_online
 from processing.plex_plugins import process_plex_plugins
+from processing.pagination import paginate_local_items
 
 LOG = Logger()
 
@@ -68,6 +69,8 @@ def run(context, url):
         if url:
             gui_item = GUIItem(url, details, extra_data)
             append_item(create_gui_item(context, gui_item))
+
+    items = paginate_local_items(context, items)
 
     if items:
         xbmcplugin.addDirectoryItems(get_handle(), items, len(items))

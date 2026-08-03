@@ -8,6 +8,7 @@ from core.logger import Logger
 from gui.builders.episode import create_episode_item
 from gui.builders.movie import create_movie_item
 from plex.network import Plex
+from processing.pagination import paginate_local_items
 
 LOG = Logger()
 
@@ -24,6 +25,8 @@ def run(context):
         for section in sections:
             if section.content_type() == content_type:
                 items += _list_content(context, server, int(section.get_key()))
+
+    items = paginate_local_items(context, items)
 
     if items:
         xbmcplugin.setContent(get_handle(), content_type)
