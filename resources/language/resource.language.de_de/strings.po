@@ -1730,8 +1730,8 @@ msgid "Enter your personal API key from Fanart.tv."
 msgstr "Den persönlichen API-Schlüssel von Fanart.tv eingeben."
 
 msgctxt "#30849"
-msgid "Order: Fanart.tv in this language, TMDb in this language, Fanart.tv in English, then Plex. 'auto' uses Kodi's language."
-msgstr "Reihenfolge: Fanart.tv in dieser Sprache, TMDb in dieser Sprache, Fanart.tv auf Englisch, danach Plex. „auto“ übernimmt die Kodi-Sprache."
+msgid "Order: Fanart.tv in this language, Fanart.tv in English, TMDb in this language, TMDb in English, then Plex. 'auto' uses Kodi's language."
+msgstr "Reihenfolge: Fanart.tv in dieser Sprache, Fanart.tv auf Englisch, TMDb in dieser Sprache, TMDb auf Englisch, danach Plex. „auto“ übernimmt die Kodi-Sprache."
 
 msgctxt "#30850"
 msgid "TMDb API key or Read Access Token (optional)"

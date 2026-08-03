@@ -158,8 +158,9 @@ A few worth knowing about:
 - **Episode sort method** (*Look and Feel*) — `Kodi` sorts by season and
   episode, `Plex` keeps the order the server sends.
 - **Prefer external thumbs** (*Look and Feel*) — uses wide localized artwork for
-  movies and TV shows. The order is Fanart.tv in the preferred language, TMDb
-  in that language, Fanart.tv in English, and finally Plex. Fanart.tv requires
+  movies and TV shows. The order is Fanart.tv in the preferred language,
+  Fanart.tv in English, TMDb in the preferred language, TMDb in English, and
+  finally Plex. Fanart.tv requires
   a [personal API key](https://fanart.tv/get-an-api-key/). The TMDb API key or
   Read Access Token is optional; without it the TMDb step is skipped. On
   Fanart.tv the most-liked thumb in the requested language wins; TMDb chooses

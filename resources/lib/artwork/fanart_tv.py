@@ -332,25 +332,26 @@ class TmdbClient:
         identity = '|'.join('%s:%s' % (key, identifiers[key])
                             for key in sorted(identifiers))
         return self.cache.sha512_cache_name(
-            'tmdb_thumb_v1', media_type, '%s:%s:%s' %
+            'tmdb_thumb_v2', media_type, '%s:%s:%s' %
             (identity, self.preferred_language, self.credential_namespace))
 
     def _cached(self, cache_name):
         found, value = self.cache.read_cache(cache_name)
         if not found or not isinstance(value, dict):
-            return False, ''
+            return False, ('', '')
         try:
             if float(value.get('expires', 0)) <= time.time():
-                return False, ''
+                return False, ('', '')
         except (TypeError, ValueError):
-            return False, ''
-        return True, value.get('thumb') or ''
+            return False, ('', '')
+        return True, (value.get('preferred') or '', value.get('english') or '')
 
-    def _store(self, cache_name, thumb):
-        ttl = THUMB_TTL if thumb else EMPTY_TTL
+    def _store(self, cache_name, preferred, english):
+        ttl = THUMB_TTL if preferred or english else EMPTY_TTL
         self.cache.write_cache(cache_name, {
             'expires': time.time() + ttl,
-            'thumb': thumb,
+            'preferred': preferred,
+            'english': english,
         })
 
     def _resolve_id(self, media_type, identifiers):
@@ -373,37 +374,39 @@ class TmdbClient:
                 return True, str(results[0]['id'])
         return True, ''
 
-    def thumb(self, media_type, identifiers):
-        """Return a localized TMDb backdrop, empty if unavailable or broken."""
+    def thumbs(self, media_type, identifiers):
+        """Return preferred and English TMDb backdrops independently."""
         if not identifiers or self.disabled.is_set():
-            return ''
+            return '', ''
 
         cache_name = self._cache_name(media_type, identifiers)
-        found, thumb = self._cached(cache_name)
+        found, thumbs = self._cached(cache_name)
         if found:
-            return thumb
+            return thumbs
 
         success, tmdb_id = self._resolve_id(media_type, identifiers)
         if not success:
-            return ''
+            return '', ''
         if not tmdb_id:
-            self._store(cache_name, '')
-            return ''
+            self._store(cache_name, '', '')
+            return '', ''
 
         resource = 'movie' if media_type == 'movie' else 'tv'
         success, payload = self._request_json(
             '/%s/%s/images' % (resource, quote(str(tmdb_id), safe='')),
-            {'language': self.preferred_language})
+            {'language': self.preferred_language,
+             'include_image_language': 'en'})
         if not success:
-            return ''
-        thumb = select_tmdb_thumb(payload.get('backdrops'),
-                                  self.preferred_language)
-        self._store(cache_name, thumb)
-        return thumb
+            return '', ''
+        preferred = select_tmdb_thumb(payload.get('backdrops'),
+                                      self.preferred_language)
+        english = select_tmdb_thumb(payload.get('backdrops'), 'en')
+        self._store(cache_name, preferred, english)
+        return preferred, english
 
 
 def prefer_thumbs(context, elements, media_type, server=None):
-    """Apply preferred Fanart, localized TMDb, English Fanart, then Plex."""
+    """Apply localized/English Fanart, localized/English TMDb, then Plex."""
     elements = list(elements)
     if not elements or media_type not in ('movie', 'show'):
         return
@@ -453,19 +456,25 @@ def prefer_thumbs(context, elements, media_type, server=None):
 
         if preferred:
             return identity, preferred
+        if english:
+            return identity, english
 
         if tmdb_client is not None:
             try:
-                tmdb_thumb = tmdb_client.thumb(media_type, identifiers)
+                tmdb_preferred, tmdb_english = tmdb_client.thumbs(
+                    media_type, identifiers)
             except Exception as error:  # pylint: disable=broad-except
                 tmdb_client.disabled.set()
                 LOG.debug('Unexpected TMDb error for %s: %s' %
                           (media_type, error))
-                tmdb_thumb = ''
-            if tmdb_thumb:
-                return identity, tmdb_thumb
+                tmdb_preferred = ''
+                tmdb_english = ''
+            if tmdb_preferred:
+                return identity, tmdb_preferred
+            if tmdb_english:
+                return identity, tmdb_english
 
-        return identity, english
+        return identity, ''
 
     workers = min(MAX_WORKERS, len(unique))
     with ThreadPoolExecutor(max_workers=workers) as executor:
