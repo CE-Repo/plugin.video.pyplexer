@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Resolve localized landscape thumbs with Plex artwork as the fallback."""
+"""Resolve localized thumbs and clearlogos with Plex as the fallback."""
 
 import copy
 import hashlib
@@ -25,6 +25,7 @@ FANART_API_BASE = 'https://webservice.fanart.tv/v3.2'
 TMDB_API_BASE = 'https://api.themoviedb.org/3'
 TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/original'
 THUMB_ATTRIBUTE = 'pyplexerFanartThumb'
+CLEARLOGO_ATTRIBUTE = 'pyplexerExternalClearlogo'
 MAX_WORKERS = 4
 GUID_BATCH_SIZE = 40
 THUMB_TTL = 7 * 24 * 60 * 60
@@ -177,6 +178,18 @@ def select_tmdb_thumb(images, language):
     return TMDB_IMAGE_BASE + path if path else ''
 
 
+def select_tmdb_clearlogo(images, language):
+    """Choose the best-rated TMDb clearlogo in exactly one language."""
+    return select_tmdb_thumb(images, language)
+
+
+def _empty_artwork():
+    return {
+        'thumb': ('', ''),
+        'clearlogo': ('', ''),
+    }
+
+
 class FanartTvClient:
     """Small cached client used while a Kodi directory is being assembled."""
 
@@ -199,42 +212,46 @@ class FanartTvClient:
 
     def _cache_name(self, media_type, identifier):
         return self.cache.sha512_cache_name(
-            'fanart_tv_thumb_v3', media_type, '%s:%s:%s' %
+            'fanart_tv_artwork_v4', media_type, '%s:%s:%s' %
             (identifier, self.preferred_language, self.credential_namespace))
 
     def _cached(self, cache_name):
         found, value = self.cache.read_cache(cache_name)
         if not found or not isinstance(value, dict):
-            return False, ('', '')
+            return False, _empty_artwork()
         try:
             if float(value.get('expires', 0)) <= time.time():
-                return False, ('', '')
+                return False, _empty_artwork()
         except (TypeError, ValueError):
-            return False, ('', '')
-        return True, (value.get('preferred') or '', value.get('english') or '')
+            return False, _empty_artwork()
+        return True, {
+            'thumb': tuple(value.get('thumb') or ('', '')),
+            'clearlogo': tuple(value.get('clearlogo') or ('', '')),
+        }
 
-    def _store(self, cache_name, preferred, english):
-        ttl = THUMB_TTL if preferred or english else EMPTY_TTL
+    def _store(self, cache_name, artwork):
+        available = any(url for values in artwork.values() for url in values)
+        ttl = THUMB_TTL if available else EMPTY_TTL
         self.cache.write_cache(cache_name, {
             'expires': time.time() + ttl,
-            'preferred': preferred,
-            'english': english,
+            'thumb': artwork['thumb'],
+            'clearlogo': artwork['clearlogo'],
         })
 
-    def thumbs(self, media_type, provider, identifier):
-        """Return preferred and English Fanart.tv thumb URLs independently."""
+    def artwork(self, media_type, provider, identifier):
+        """Return localized Fanart.tv thumbs and clearlogos."""
         if not identifier or self.disabled.is_set():
-            return '', ''
+            return _empty_artwork()
 
         cache_name = self._cache_name(media_type, identifier)
-        found, thumbs = self._cached(cache_name)
+        found, artwork = self._cached(cache_name)
         if found:
-            return thumbs
+            return artwork
 
         resource = 'movies' if media_type == 'movie' else 'tv'
         # The movie endpoint accepts TMDb and IMDb ids. TV requires TVDb.
         if media_type == 'show' and provider != 'tvdb':
-            return '', ''
+            return _empty_artwork()
         url = '%s/%s/%s' % (FANART_API_BASE, resource, identifier)
 
         try:
@@ -242,19 +259,20 @@ class FanartTvClient:
                                     verify=True, timeout=DIRECT_TIMEOUT)
         except requests.exceptions.RequestException as error:
             self.disabled.set()
-            LOG.debug('Thumb request failed for %s %s: %s' %
+            LOG.debug('Fanart.tv request failed for %s %s: %s' %
                       (media_type, identifier, error))
-            return '', ''
+            return _empty_artwork()
 
         if response.status_code == requests.codes.not_found:  # pylint: disable=no-member
-            self._store(cache_name, '', '')
-            return '', ''
+            artwork = _empty_artwork()
+            self._store(cache_name, artwork)
+            return artwork
         if response.status_code != requests.codes.ok:  # pylint: disable=no-member
             if response.status_code in (401, 403, 429) or response.status_code >= 500:
                 self.disabled.set()
             LOG.debug('Fanart.tv HTTP %s for %s %s' %
                       (response.status_code, media_type, identifier))
-            return '', ''
+            return _empty_artwork()
 
         try:
             payload = response.json()
@@ -262,22 +280,33 @@ class FanartTvClient:
             self.disabled.set()
             LOG.debug('Invalid Fanart.tv response for %s %s: %s' %
                       (media_type, identifier, error))
-            return '', ''
+            return _empty_artwork()
         if not isinstance(payload, dict):
             self.disabled.set()
             LOG.debug('Unexpected Fanart.tv response for %s %s' %
                       (media_type, identifier))
-            return '', ''
+            return _empty_artwork()
 
-        key = 'moviethumb' if media_type == 'movie' else 'tvthumb'
-        preferred = select_thumb(payload.get(key), self.preferred_language)
-        english = select_thumb(payload.get(key), 'en')
-        self._store(cache_name, preferred, english)
-        return preferred, english
+        thumb_key = 'moviethumb' if media_type == 'movie' else 'tvthumb'
+        logo_keys = (('hdmovielogo', 'movielogo') if media_type == 'movie'
+                     else ('hdtvlogo', 'tvlogo'))
+        logos = []
+        for logo_key in logo_keys:
+            logos.extend(payload.get(logo_key) or [])
+        artwork = {
+            'thumb': (
+                select_thumb(payload.get(thumb_key), self.preferred_language),
+                select_thumb(payload.get(thumb_key), 'en')),
+            'clearlogo': (
+                select_thumb(logos, self.preferred_language),
+                select_thumb(logos, 'en')),
+        }
+        self._store(cache_name, artwork)
+        return artwork
 
 
 class TmdbClient:
-    """Cached TMDb client for the optional localized-backdrop fallback."""
+    """Cached TMDb client for optional localized artwork fallbacks."""
 
     def __init__(self, settings):
         self.api_key = str(settings.tmdb_api_key() or '').strip()
@@ -332,26 +361,30 @@ class TmdbClient:
         identity = '|'.join('%s:%s' % (key, identifiers[key])
                             for key in sorted(identifiers))
         return self.cache.sha512_cache_name(
-            'tmdb_thumb_v2', media_type, '%s:%s:%s' %
+            'tmdb_artwork_v3', media_type, '%s:%s:%s' %
             (identity, self.preferred_language, self.credential_namespace))
 
     def _cached(self, cache_name):
         found, value = self.cache.read_cache(cache_name)
         if not found or not isinstance(value, dict):
-            return False, ('', '')
+            return False, _empty_artwork()
         try:
             if float(value.get('expires', 0)) <= time.time():
-                return False, ('', '')
+                return False, _empty_artwork()
         except (TypeError, ValueError):
-            return False, ('', '')
-        return True, (value.get('preferred') or '', value.get('english') or '')
+            return False, _empty_artwork()
+        return True, {
+            'thumb': tuple(value.get('thumb') or ('', '')),
+            'clearlogo': tuple(value.get('clearlogo') or ('', '')),
+        }
 
-    def _store(self, cache_name, preferred, english):
-        ttl = THUMB_TTL if preferred or english else EMPTY_TTL
+    def _store(self, cache_name, artwork):
+        available = any(url for values in artwork.values() for url in values)
+        ttl = THUMB_TTL if available else EMPTY_TTL
         self.cache.write_cache(cache_name, {
             'expires': time.time() + ttl,
-            'preferred': preferred,
-            'english': english,
+            'thumb': artwork['thumb'],
+            'clearlogo': artwork['clearlogo'],
         })
 
     def _resolve_id(self, media_type, identifiers):
@@ -374,22 +407,23 @@ class TmdbClient:
                 return True, str(results[0]['id'])
         return True, ''
 
-    def thumbs(self, media_type, identifiers):
-        """Return preferred and English TMDb backdrops independently."""
+    def artwork(self, media_type, identifiers):
+        """Return localized TMDb backdrops and clearlogos."""
         if not identifiers or self.disabled.is_set():
-            return '', ''
+            return _empty_artwork()
 
         cache_name = self._cache_name(media_type, identifiers)
-        found, thumbs = self._cached(cache_name)
+        found, artwork = self._cached(cache_name)
         if found:
-            return thumbs
+            return artwork
 
         success, tmdb_id = self._resolve_id(media_type, identifiers)
         if not success:
-            return '', ''
+            return _empty_artwork()
         if not tmdb_id:
-            self._store(cache_name, '', '')
-            return '', ''
+            artwork = _empty_artwork()
+            self._store(cache_name, artwork)
+            return artwork
 
         resource = 'movie' if media_type == 'movie' else 'tv'
         success, payload = self._request_json(
@@ -397,16 +431,23 @@ class TmdbClient:
             {'language': self.preferred_language,
              'include_image_language': 'en'})
         if not success:
-            return '', ''
-        preferred = select_tmdb_thumb(payload.get('backdrops'),
-                                      self.preferred_language)
-        english = select_tmdb_thumb(payload.get('backdrops'), 'en')
-        self._store(cache_name, preferred, english)
-        return preferred, english
+            return _empty_artwork()
+        artwork = {
+            'thumb': (
+                select_tmdb_thumb(payload.get('backdrops'),
+                                  self.preferred_language),
+                select_tmdb_thumb(payload.get('backdrops'), 'en')),
+            'clearlogo': (
+                select_tmdb_clearlogo(payload.get('logos'),
+                                      self.preferred_language),
+                select_tmdb_clearlogo(payload.get('logos'), 'en')),
+        }
+        self._store(cache_name, artwork)
+        return artwork
 
 
-def prefer_thumbs(context, elements, media_type, server=None):
-    """Apply localized/English Fanart, localized/English TMDb, then Plex."""
+def prefer_artwork(context, elements, media_type, server=None):
+    """Resolve localized thumbs and clearlogos with the shared fallback order."""
     elements = list(elements)
     if not elements or media_type not in ('movie', 'show'):
         return
@@ -433,12 +474,12 @@ def prefer_thumbs(context, elements, media_type, server=None):
     unique = {}
     for _, identifiers in identified:
         identity = tuple(sorted(identifiers.items()))
-        unique[identity] = None
+        unique[identity] = ('', '')
 
     def fetch(identity):
         identifiers = dict(identity)
-        preferred = ''
-        english = ''
+        fanart_artwork = _empty_artwork()
+        tmdb_artwork = _empty_artwork()
 
         if fanart_client is not None:
             providers = ('tmdb', 'imdb') if media_type == 'movie' else ('tvdb',)
@@ -447,46 +488,52 @@ def prefer_thumbs(context, elements, media_type, server=None):
             identifier = identifiers.get(provider) if provider else ''
             if identifier:
                 try:
-                    preferred, english = fanart_client.thumbs(
+                    fanart_artwork = fanart_client.artwork(
                         media_type, provider, identifier)
                 except Exception as error:  # pylint: disable=broad-except
                     fanart_client.disabled.set()
                     LOG.debug('Unexpected Fanart.tv error for %s %s: %s' %
                               (media_type, identifier, error))
 
-        if preferred:
-            return identity, preferred
-        if english:
-            return identity, english
-
-        if tmdb_client is not None:
+        needs_tmdb = any(not (fanart_artwork[kind][0] or
+                              fanart_artwork[kind][1])
+                         for kind in ('thumb', 'clearlogo'))
+        if tmdb_client is not None and needs_tmdb:
             try:
-                tmdb_preferred, tmdb_english = tmdb_client.thumbs(
-                    media_type, identifiers)
+                tmdb_artwork = tmdb_client.artwork(media_type, identifiers)
             except Exception as error:  # pylint: disable=broad-except
                 tmdb_client.disabled.set()
                 LOG.debug('Unexpected TMDb error for %s: %s' %
                           (media_type, error))
-                tmdb_preferred = ''
-                tmdb_english = ''
-            if tmdb_preferred:
-                return identity, tmdb_preferred
-            if tmdb_english:
-                return identity, tmdb_english
 
-        return identity, ''
+        def choose(kind):
+            fanart_preferred, fanart_english = fanart_artwork[kind]
+            tmdb_preferred, tmdb_english = tmdb_artwork[kind]
+            return (fanart_preferred or fanart_english or
+                    tmdb_preferred or tmdb_english or '')
+
+        return identity, (choose('thumb'), choose('clearlogo'))
 
     workers = min(MAX_WORKERS, len(unique))
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        for key, thumb in executor.map(fetch, unique):
-            unique[key] = thumb
+        for key, artwork in executor.map(fetch, unique):
+            unique[key] = artwork
 
-    applied = 0
+    thumbs_applied = 0
+    logos_applied = 0
     for element, identifiers in identified:
-        thumb = unique.get(tuple(sorted(identifiers.items()))) or ''
+        thumb, clearlogo = unique.get(tuple(sorted(identifiers.items())), ('', ''))
         if thumb:
             element.set(THUMB_ATTRIBUTE, thumb)
-            applied += 1
+            thumbs_applied += 1
+        if clearlogo:
+            element.set(CLEARLOGO_ATTRIBUTE, clearlogo)
+            logos_applied += 1
 
-    LOG.debug('External thumbs applied to %s of %s %s item(s)' %
-              (applied, len(elements), media_type))
+    LOG.debug('External thumbs/logos applied to %s/%s of %s %s item(s)' %
+              (thumbs_applied, logos_applied, len(elements), media_type))
+
+
+def prefer_thumbs(context, elements, media_type, server=None):
+    """Backward-compatible alias for the external artwork resolver."""
+    return prefer_artwork(context, elements, media_type, server)

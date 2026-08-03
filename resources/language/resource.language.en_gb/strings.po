@@ -1716,7 +1716,7 @@ msgid "External artwork"
 msgstr ""
 
 msgctxt "#30842"
-msgid "Prefer external thumbs"
+msgid "Prefer external thumbs and clearlogos"
 msgstr ""
 
 msgctxt "#30844"
@@ -1724,11 +1724,11 @@ msgid "Fanart.tv personal API key"
 msgstr ""
 
 msgctxt "#30845"
-msgid "Preferred thumb language"
+msgid "Preferred artwork language"
 msgstr ""
 
 msgctxt "#30846"
-msgid "Use localized wide thumbs from Fanart.tv and optionally TMDb, with Plex artwork as the final fallback."
+msgid "Use localized thumbs and clearlogos from Fanart.tv and optionally TMDb, with Plex artwork as the final fallback."
 msgstr ""
 
 msgctxt "#30848"
@@ -1736,7 +1736,7 @@ msgid "Enter your personal API key from Fanart.tv."
 msgstr ""
 
 msgctxt "#30849"
-msgid "Order: Fanart.tv in this language, Fanart.tv in English, TMDb in this language, TMDb in English, then Plex. 'auto' uses Kodi's language."
+msgid "For thumbs and clearlogos: Fanart.tv in this language, Fanart.tv in English, TMDb in this language, TMDb in English, then Plex. 'auto' uses Kodi's language."
 msgstr ""
 
 msgctxt "#30850"

@@ -16,10 +16,11 @@ import xbmcplugin  # pylint: disable=import-error
 
 from infotagger.listitem import ListItemInfoTag  # pylint: disable=import-error
 
+from artwork.fanart_tv import CLEARLOGO_ATTRIBUTE
 from artwork.fanart_tv import THUMB_ATTRIBUTE
 from artwork.fanart_tv import external_id
 from artwork.fanart_tv import is_configured
-from artwork.fanart_tv import prefer_thumbs
+from artwork.fanart_tv import prefer_artwork
 from core.common import get_argv
 from core.common import get_current_plugin_url
 from core.common import get_handle
@@ -61,10 +62,10 @@ def process_provider(context, base, tree, in_watchlist=False):
 
     nodes = list(_iter_nodes(tree))
     _attach_summaries(context, base, nodes)
-    prefer_thumbs(context, [node for node in nodes
-                            if (node.get('type') or '').lower() == 'movie'], 'movie')
-    prefer_thumbs(context, [node for node in nodes
-                            if (node.get('type') or '').lower() == 'show'], 'show')
+    prefer_artwork(context, [node for node in nodes
+                             if (node.get('type') or '').lower() == 'movie'], 'movie')
+    prefer_artwork(context, [node for node in nodes
+                             if (node.get('type') or '').lower() == 'show'], 'show')
     watchlist_ids = (set() if in_watchlist else
                      context.plex_network.get_provider_watchlist_ids())
 
@@ -97,25 +98,31 @@ def _iter_nodes(tree):
 
 
 def _attach_summaries(context, base, nodes):
-    """Fill in plots and external ids that provider listings omit.
+    """Fill in plots, external ids and Plex logos provider listings omit.
 
     The Watchlist answers with the tagline but without the summary; the
     metadata of the items has it.  Plex takes several rating keys in one go, so
     a whole page costs a single request.  Anything that does not come back is
     simply left without a plot.
     """
-    use_fanart = is_configured(context.settings)
+    use_external_artwork = is_configured(context.settings)
 
     def needs_details(node):
         if not node.get('ratingKey'):
             return False
         if not node.get('summary'):
             return True
-        if not use_fanart:
+        if not use_external_artwork:
             return False
         node_type = (node.get('type') or '').lower()
-        return (node_type in ('movie', 'show') and
-                not external_id(node, node_type)[1])
+        if node_type not in ('movie', 'show'):
+            return False
+        if not external_id(node, node_type)[1]:
+            return True
+        has_clearlogo = (node.get('clearLogo') or
+                         any((image.get('type') or '').lower() == 'clearlogo'
+                             for image in node.findall('Image')))
+        return not has_clearlogo
 
     missing = [node for node in nodes if needs_details(node)]
 
@@ -154,6 +161,15 @@ def _attach_summaries(context, base, nodes):
         if not node.findall('Guid'):
             for guid in detail.findall('Guid'):
                 node.append(copy.copy(guid))
+        if not node.get('clearLogo') and detail.get('clearLogo'):
+            node.set('clearLogo', detail.get('clearLogo'))
+        has_clearlogo = any((image.get('type') or '').lower() == 'clearlogo'
+                            for image in node.findall('Image'))
+        if not has_clearlogo:
+            for image in detail.findall('Image'):
+                if (image.get('type') or '').lower() == 'clearlogo':
+                    node.append(copy.copy(image))
+                    break
 
     LOG.debug('Summary filled in for %s of %s item(s)' % (filled, len(missing)))
 
@@ -352,6 +368,16 @@ def _art(base, token, node):
     fanart_thumb = node.get(THUMB_ATTRIBUTE)
     if fanart_thumb:
         art['landscape'] = fanart_thumb
+    clearlogo = node.get(CLEARLOGO_ATTRIBUTE) or node.get('clearLogo')
+    if not clearlogo:
+        for image in node.findall('Image'):
+            if (image.get('type') or '').lower() == 'clearlogo':
+                clearlogo = image.get('url') or ''
+                break
+    if clearlogo:
+        clearlogo_url = _image_url(base, token, clearlogo)
+        art['clearlogo'] = clearlogo_url
+        art['logo'] = clearlogo_url
     fanart = node.get('art')
     if fanart:
         art['fanart'] = _image_url(base, token, fanart)

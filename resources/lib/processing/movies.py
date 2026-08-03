@@ -4,7 +4,7 @@ import time
 
 import xbmcplugin  # pylint: disable=import-error
 
-from artwork.fanart_tv import prefer_thumbs
+from artwork.fanart_tv import prefer_artwork
 from core.common import get_handle
 from core.context import Item
 from core.logger import Logger
@@ -41,7 +41,7 @@ def process_movies(context, url, tree=None):
     # alone by the lookup itself
     videos = [branch for branch in branches if branch.tag.lower() == 'video']
     attach_media_streams(server, videos)
-    prefer_thumbs(context, videos, 'movie', server)
+    prefer_artwork(context, videos, 'movie', server)
 
     for branch in branches:
         item = Item(server, url, tree, branch)
