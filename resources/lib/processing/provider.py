@@ -17,6 +17,7 @@ import xbmcplugin  # pylint: disable=import-error
 from infotagger.listitem import ListItemInfoTag  # pylint: disable=import-error
 
 from artwork.fanart_tv import CLEARLOGO_ATTRIBUTE
+from artwork.fanart_tv import POSTER_ATTRIBUTE
 from artwork.fanart_tv import THUMB_ATTRIBUTE
 from artwork.fanart_tv import external_id
 from artwork.fanart_tv import is_configured
@@ -365,6 +366,11 @@ def _art(base, token, node):
         thumb_url = _image_url(base, token, thumb)
         art['thumb'] = thumb_url
         art['poster'] = thumb_url
+    external_poster = node.get(POSTER_ATTRIBUTE)
+    if external_poster:
+        poster_url = _image_url(base, token, external_poster)
+        art['thumb'] = poster_url
+        art['poster'] = poster_url
     fanart_thumb = node.get(THUMB_ATTRIBUTE)
     if fanart_thumb:
         art['landscape'] = fanart_thumb

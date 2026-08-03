@@ -157,26 +157,26 @@ A few worth knowing about:
   `All seasons`.
 - **Episode sort method** (*Look and Feel*) — `Kodi` sorts by season and
   episode, `Plex` keeps the order the server sends.
-- **Prefer external thumbs and clearlogos** (*Look and Feel*) — uses localized
-  wide artwork and transparent title logos for movies and TV shows. For both
-  image types, the order is Fanart.tv in the preferred language, Fanart.tv in
-  English, TMDb in the preferred language, TMDb in English, and finally Plex.
+- **Prefer external thumbs, posters and clearlogos** (*Look and Feel*) — uses
+  localized wide artwork, portrait posters and transparent title logos for
+  movies and TV shows. For all three image types, the order is Fanart.tv in
+  the preferred language, Fanart.tv in English, TMDb in the preferred
+  language, TMDb in English, and finally Plex.
   Fanart.tv requires
   a [personal API key](https://fanart.tv/get-an-api-key/). The TMDb API key or
   Read Access Token is optional; without it the TMDb step is skipped. On
   Fanart.tv the image with the most likes in the requested language wins; TMDb
-  chooses the best-rated matching backdrop or logo. `auto` uses Kodi's
+  chooses the best-rated matching backdrop, poster or logo. `auto` uses Kodi's
   language, while a two-letter code such as `de` or `en` overrides it. API
   errors advance to the next fallback and results are cached for seven days.
-  Thumbs are exposed as Kodi `landscape` artwork; poster views continue to
-  display Plex's portrait poster. Plex listings are loaded server-side in
+  Thumbs are exposed as Kodi `landscape` artwork; portrait views use the
+  resolved external poster. Plex listings are loaded server-side in
   pages of at most 100 entries, including libraries, collections, seasons,
   episodes, search results and channels. Watchlist and Discover keep their
   native provider behavior. Lists of up to 20 titles resolve missing artwork
-  immediately; larger pages open from cache
-  without waiting for external APIs. PyPlexer's service fills missing artwork
-  in the background
-  and refreshes an open PyPlexer list once the queue is complete.
+  immediately; larger pages open from cache without waiting for external
+  APIs. PyPlexer's service fills missing artwork in the background and
+  refreshes an open PyPlexer list once the queue is complete.
 - **Server name prefix on the main menu** (*Look and Feel*) — `Default` adds the
   server name only when more than one server is present, `Always` adds it even
   with a single server.

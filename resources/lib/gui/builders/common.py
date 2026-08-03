@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ETree
 from urllib.parse import quote_plus
 
 from artwork.fanart_tv import CLEARLOGO_ATTRIBUTE
+from artwork.fanart_tv import POSTER_ATTRIBUTE
 from artwork.fanart_tv import THUMB_ATTRIBUTE
 from core.logger import Logger
 from playback.quality import describe_short
@@ -78,6 +79,10 @@ def get_thumb_image(context, server, data, width=720, height=720):
     """
     if context.settings.skip_images():
         return ''
+
+    external_poster = data.get(POSTER_ATTRIBUTE, '')
+    if external_poster:
+        return external_poster
 
     thumbnail = data.get('thumb', '').split('?t')[0]
 
