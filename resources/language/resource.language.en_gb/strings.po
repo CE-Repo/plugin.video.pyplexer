@@ -301,14 +301,6 @@ msgctxt "#30071"
 msgid "Select media to play"
 msgstr ""
 
-msgctxt "#30072"
-msgid "Select subtitle"
-msgstr ""
-
-msgctxt "#30073"
-msgid "Select audio"
-msgstr ""
-
 msgctxt "#30074"
 msgid "Select master server"
 msgstr ""
@@ -358,7 +350,7 @@ msgid "Playlists"
 msgstr ""
 
 msgctxt "#30086"
-msgid "Play Transcoded"
+msgid "Transcoding"
 msgstr ""
 
 msgctxt "#30087"
@@ -1697,4 +1689,20 @@ msgstr ""
 
 msgctxt "#30833"
 msgid "Mb/s"
+msgstr ""
+
+msgctxt "#30835"
+msgid "Could not identify this title"
+msgstr ""
+
+msgctxt "#30836"
+msgid "Plex could not match this title"
+msgstr ""
+
+msgctxt "#30838"
+msgid "Already in the Watchlist"
+msgstr ""
+
+msgctxt "#30839"
+msgid "Add/Remove from Watchlist"
 msgstr ""

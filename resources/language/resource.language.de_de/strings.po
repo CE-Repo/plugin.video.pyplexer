@@ -300,14 +300,6 @@ msgctxt "#30071"
 msgid "Select media to play"
 msgstr "Medien für Wiedergabe auswählen"
 
-msgctxt "#30072"
-msgid "Select subtitle"
-msgstr "Untertiel auswählen"
-
-msgctxt "#30073"
-msgid "Select audio"
-msgstr "Audio auswählen"
-
 msgctxt "#30074"
 msgid "Select master server"
 msgstr "Hauptserver auswählen"
@@ -357,8 +349,8 @@ msgid "Playlists"
 msgstr "Wiedergabelisten"
 
 msgctxt "#30086"
-msgid "Play Transcoded"
-msgstr "Transcodierte Wiedergabe"
+msgid "Transcoding"
+msgstr "Transkodieren"
 
 msgctxt "#30087"
 msgid "All episodes"
@@ -1671,7 +1663,7 @@ msgstr "Bessere Qualität verfügbar"
 
 msgctxt "#30828"
 msgid "Searching for a better quality..."
-msgstr "Suche nach besserer Qualität ..."
+msgstr "Suche nach besserer Qualität..."
 
 msgctxt "#30829"
 msgid "Current version"
@@ -1692,6 +1684,22 @@ msgstr "Andere Bibliothek"
 msgctxt "#30833"
 msgid "Mb/s"
 msgstr "Mb/s"
+
+msgctxt "#30835"
+msgid "Could not identify this title"
+msgstr "Dieser Titel konnte nicht erkannt werden"
+
+msgctxt "#30836"
+msgid "Plex could not match this title"
+msgstr "Plex konnte diesen Titel nicht zuordnen"
+
+msgctxt "#30838"
+msgid "Already in the Watchlist"
+msgstr "Bereits in der Merkliste vorhanden"
+
+msgctxt "#30839"
+msgid "Add/Remove from Watchlist"
+msgstr "Aus Merkliste hinzufügen/entfernen"
 
 #~ msgctxt "#30689"
 #~ msgid "Up Next requires Kodi 18 or higher"

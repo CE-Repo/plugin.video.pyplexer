@@ -13,12 +13,16 @@ def strip_transcode(url):
 
 if __name__ == '__main__':
     # sys.listitem is injected by Kodi when running as a context menu item
-    info_tag = sys.listitem.getVideoInfoTag()  # pylint: disable=no-member
+    list_item = sys.listitem  # pylint: disable=no-member
+    info_tag = list_item.getVideoInfoTag()
 
-    try:
-        plugin_url = info_tag.getFilenameAndPath()
-    except AttributeError:
-        plugin_url = xbmc.getInfoLabel('ListItem.FileNameAndPath')
+    plugin_url = list_item.getProperty('PyPlexer.PluginUrl')
+
+    if not plugin_url:
+        try:
+            plugin_url = info_tag.getFilenameAndPath()
+        except AttributeError:
+            plugin_url = xbmc.getInfoLabel('ListItem.FileNameAndPath')
 
     plugin_url = strip_transcode(plugin_url)
     plugin_url += '&transcode=1'

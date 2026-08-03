@@ -50,6 +50,52 @@ def watchlist_remove(context):
     _watchlist_action(context, add=False)
 
 
+def watchlist_add_external(context):
+    _watchlist_external_action(context, add=True)
+
+
+def watchlist_remove_external(context):
+    _watchlist_external_action(context, add=False)
+
+
+def watchlist_toggle_external(context):
+    _watchlist_external_action(context, add=None)
+
+
+def _watchlist_external_action(context, add):
+    """Add or remove the focused TMDb Helper item as explicitly requested."""
+    context.plex_network = Plex(context.settings, load=False)
+    if not context.plex_network.is_myplex_signedin():
+        xbmcgui.Dialog().notification(heading=CONFIG['name'],
+                                      message=i18n('myPlex not configured'),
+                                      icon=CONFIG['icon'])
+        return
+
+    argv = get_argv()
+    media_type = argv[2].strip() if len(argv) > 2 else None
+    external_guid = argv[3].strip() if len(argv) > 3 else None
+
+    rating_key = context.plex_network.resolve_provider_rating_key(external_guid, media_type)
+    if not rating_key:
+        message = i18n_or('Plex could not match this title',
+                          'Plex konnte diesen Titel nicht zuordnen')
+        xbmcgui.Dialog().notification(heading=CONFIG['name'], message=message,
+                                      icon=CONFIG['icon'])
+        return
+
+    watchlisted = context.plex_network.is_provider_watchlisted(rating_key)
+    if add is None:
+        add = not watchlisted
+    elif add and watchlisted:
+        _watchlist_already_added()
+        return
+
+    success = context.plex_network.provider_watchlist_action(add, rating_key)
+    _watchlist_result(success, add)
+    if success:
+        xbmc.executebuiltin('Container.Refresh')
+
+
 def _watchlist_action(context, add):
     context.plex_network = Plex(context.settings, load=False)
 
@@ -57,16 +103,31 @@ def _watchlist_action(context, add):
     rating_key = argv[2] if len(argv) > 2 else None
     success = context.plex_network.provider_watchlist_action(add, rating_key)
 
+    _watchlist_result(success, add)
+    xbmc.executebuiltin('Container.Refresh')
+
+
+def _watchlist_result(success, add):
+    """Show the localized result shared by direct and external actions."""
+
     if success and add:
-        message = i18n_or('Added to Watchlist', 'Zur Merkliste hinzugefügt')
+        message = i18n_or('Added to Watchlist',
+                          'Zur Merkliste hinzugefügt')
     elif success:
-        message = i18n_or('Removed from Watchlist', 'Von Merkliste entfernt')
+        message = i18n_or('Removed from Watchlist',
+                          'Von Merkliste entfernt')
     else:
         message = i18n_or('Could not update Watchlist',
                           'Merkliste konnte nicht aktualisiert werden')
 
     xbmcgui.Dialog().notification(heading=CONFIG['name'], message=message, icon=CONFIG['icon'])
-    xbmc.executebuiltin('Container.Refresh')
+
+
+def _watchlist_already_added():
+    message = i18n_or('Already in the Watchlist',
+                      'Bereits in der Merkliste vorhanden')
+    xbmcgui.Dialog().notification(heading=CONFIG['name'], message=message,
+                                  icon=CONFIG['icon'])
 
 
 def discover(context):

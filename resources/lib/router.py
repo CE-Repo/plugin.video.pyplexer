@@ -98,6 +98,21 @@ def run(start_time):  # pylint: disable=too-many-locals, too-many-statements, to
         provider.watchlist_remove(context)
         return _finished(start_time)
 
+    if command == COMMANDS.ADD_EXTERNAL_WATCHLIST:
+        from routes.browse import provider
+        provider.watchlist_add_external(context)
+        return _finished(start_time)
+
+    if command == COMMANDS.REMOVE_EXTERNAL_WATCHLIST:
+        from routes.browse import provider
+        provider.watchlist_remove_external(context)
+        return _finished(start_time)
+
+    if command == COMMANDS.TOGGLE_EXTERNAL_WATCHLIST:
+        from routes.browse import provider
+        provider.watchlist_toggle_external(context)
+        return _finished(start_time)
+
     if command == COMMANDS.DELETEREFRESH:
         from routes.library import delete_and_refresh
         delete_and_refresh.run(context)
@@ -118,18 +133,6 @@ def run(start_time):  # pylint: disable=too-many-locals, too-many-statements, to
     if command == COMMANDS.DELETE:
         from routes.library import delete_media
         delete_media.run(context)
-        return _finished(start_time)
-
-    # Display subtitle selection screen
-    if command == COMMANDS.SUBS:
-        from routes.play import subtitle_stream
-        subtitle_stream.run(context)
-        return _finished(start_time)
-
-    # Display audio stream selection screen
-    if command == COMMANDS.AUDIO:
-        from routes.play import audio_stream
-        audio_stream.run(context)
         return _finished(start_time)
 
     # Allow a master server to be selected (for myPlex Queue)

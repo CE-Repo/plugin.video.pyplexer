@@ -18,7 +18,6 @@ def __enum(**enums):
 COMMANDS = __enum(
     UNSET=None,
     ADDTOPLAYLIST='add_playlist_item',
-    AUDIO='audio',
     DELETE='delete',
     DELETEPLAYLIST='delete_playlist',
     DELETEFROMPLAYLIST='delete_playlist_item',
@@ -29,7 +28,6 @@ COMMANDS = __enum(
     REFRESH='refresh',
     SIGNIN='signin',
     SIGNOUT='signout',
-    SUBS='subs',
     SWITCHUSER='switchuser',
     UPDATE='update',
     WATCH='watch',
@@ -40,6 +38,9 @@ COMMANDS = __enum(
     DETECTSERVERS='detect_servers',
     ADD_WATCHLIST='add_watchlist',
     REMOVE_WATCHLIST='remove_watchlist',
+    ADD_EXTERNAL_WATCHLIST='add_external_watchlist',
+    REMOVE_EXTERNAL_WATCHLIST='remove_external_watchlist',
+    TOGGLE_EXTERNAL_WATCHLIST='toggle_external_watchlist',
 )
 
 MODES = __enum(

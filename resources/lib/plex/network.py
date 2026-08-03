@@ -5,6 +5,7 @@ import hashlib
 import socket
 import traceback
 import xml.etree.ElementTree as ETree
+from urllib.parse import urlencode
 from urllib.parse import urlparse
 
 import requests
@@ -70,6 +71,7 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
         self.plexhome_cache = 'plexhome_user.pcache'
         self.client_id = None
         self.user_list = {}
+        self._provider_watchlist_ids = None
         self.plexhome_settings = {
             'myplex_signedin': False,
             'plexhome_enabled': False,
@@ -611,6 +613,74 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
 
         return self._parse_provider_xml(data)
 
+    def resolve_provider_rating_key(self, external_guid, media_type):
+        """Resolve a TMDb/IMDb/TVDb guid to a Plex Discover rating key.
+
+        Plex's Watchlist actions do not accept external ids. The matches
+        endpoint translates them to the global provider rating key. Supplying
+        the media type is essential because TMDb movie and show ids share the
+        same numeric namespace.
+        """
+        external_guid = str(external_guid or '').strip()
+        media_type = str(media_type or '').strip().lower()
+        plex_type = {'movie': 1, 'show': 2}.get(media_type)
+        if not plex_type or not external_guid:
+            return None
+
+        path = '/library/metadata/matches?%s' % urlencode({
+            'type': plex_type,
+            'guid': external_guid,
+        })
+        tree = self._parse_provider_xml(self.talk_to_provider(PROVIDER_METADATA, path))
+        if tree is None:
+            return None
+
+        for element in tree.iter():
+            rating_key = element.get('ratingKey')
+            if rating_key:
+                LOG.debug('Provider match %s -> ratingKey %s' %
+                          (external_guid, rating_key))
+                return rating_key
+
+        LOG.debug('No provider match for %s (%s)' % (external_guid, media_type))
+        return None
+
+    def is_provider_watchlisted(self, rating_key):
+        """Return whether a Discover rating key is already on the Watchlist."""
+        if not rating_key:
+            return None
+
+        return str(rating_key) in self.get_provider_watchlist_ids()
+
+    def get_provider_watchlist_ids(self):
+        """Return all provider ids on the Watchlist, fetched only once."""
+        if self._provider_watchlist_ids is not None:
+            return self._provider_watchlist_ids
+
+        ids = set()
+        tree = self.get_watchlist()
+        if tree is not None:
+            for element in tree.iter():
+                candidate = element.get('ratingKey')
+                guid = element.get('guid') or ''
+                if candidate:
+                    ids.add(str(candidate))
+                if guid:
+                    ids.add(guid.rsplit('/', 1)[-1])
+
+        self._provider_watchlist_ids = ids
+        return ids
+
+    def _update_provider_watchlist_ids(self, add, rating_key):
+        if self._provider_watchlist_ids is None:
+            return
+
+        wanted = str(rating_key)
+        if add:
+            self._provider_watchlist_ids.add(wanted)
+        else:
+            self._provider_watchlist_ids.discard(wanted)
+
     def get_discover_hubs(self):
         """The account-level Plex Discover feed."""
         tree = self._parse_provider_xml(self.talk_to_provider(PROVIDER_DISCOVER, '/hubs'))
@@ -641,6 +711,7 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
                 continue
 
             if response.status_code < 400:
+                self._update_provider_watchlist_ids(add, rating_key)
                 return True
 
             LOG.error('Watchlist action HTTP %s at %s: %s' %

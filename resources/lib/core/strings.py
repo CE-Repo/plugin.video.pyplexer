@@ -11,8 +11,6 @@ STRINGS = {
     # core
     'Delete': 117,
     'Refresh': 184,
-    'Subtitles': 287,
-    'Audio': 292,
     'Update library': 653,
     'Mark as watched': 16103,
     'Mark as unwatched': 16104,
@@ -67,8 +65,6 @@ STRINGS = {
     'Library refresh started': 30068,
     'myPlex not configured': 30069,
     'Select media to play': 30071,
-    'Select subtitle': 30072,
-    'Select audio': 30073,
     'Select master server': 30074,
     'Known server list': 30075,
     'Switch User': 30076,
@@ -79,7 +75,7 @@ STRINGS = {
     'Refresh Data': 30083,
     'Channels': 30084,
     'Playlists': 30085,
-    'Play Transcoded': 30086,
+    'Transcoding': 30086,
     'All episodes': 30087,
     'Season': 30088,
     'Search for': 30089,
@@ -230,6 +226,10 @@ STRINGS = {
     'Always show the version dialog': 30831,
     'Other library': 30832,
     'Mb/s': 30833,
+    'Could not identify this title': 30835,
+    'Plex could not match this title': 30836,
+    'Already in the Watchlist': 30838,
+    'Add/Remove from Watchlist': 30839,
 }
 
 

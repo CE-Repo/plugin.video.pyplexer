@@ -115,8 +115,12 @@ unwatched, Subtitles, Audio, Update library, and Delete. Delete is hidden unless
 suppressed with **Skip Context Menus** — both in *Settings → Look and Feel*.
 
 **On library and widget items** — When Plex media has been scraped into the
-Kodi library, a *PyPlexer* submenu adds *Play Transcoded*, *Mark as watched*
+Kodi library, a *PyPlexer* submenu adds *Transcoding*, *Mark as watched*
 and *Mark as unwatched*, so watched state set in Kodi reaches the server.
+On TMDb Helper movie and TV-show widgets it also adds *Add to Plex Watchlist*
+and *Remove from Plex Watchlist*. The actions resolve the item's
+TMDb/IMDb/TVDb id, then update the Watchlist of the Plex account signed into
+PyPlexer.
 
 ## Settings
 
@@ -230,6 +234,13 @@ The player hands the title over together with the data it already knows -
 `year` for a film, `showtitle`, `season` and `episode` for an episode - and
 PyPlexer resolves that to a single item instead of returning everything Plex'
 full text search finds for the word.
+
+TMDb Helper movie and TV-show widgets also expose *PyPlexer → Add to Plex
+Watchlist* and *PyPlexer → Remove from Plex Watchlist* in Kodi's context menu.
+Each action performs the selected operation for the focused title and reports
+whether it was added, removed or was already present. The actions are available
+on home-screen widgets, in Arctic Fuse 3 search results, and in its video
+information dialog.
 
 A film only counts as a match when its title matches exactly - checked against
 the library title, the original title and the sort title - and its year fits.
