@@ -149,6 +149,9 @@ def _get_properties(context, item):
             item_properties['PyPlexer.ServerUrl'] = item.url
             item_properties['PyPlexer.MediaId'] = media_id
             item_properties['PyPlexer.CanMarkWatched'] = 'true'
+            item_properties['PyPlexer.Watched'] = (
+                'true' if int(item.info_labels.get('playcount', 0) or 0) > 0
+                else 'false')
 
     # Context items added through ListItem.addContextMenuItems() always appear
     # in Kodi's main context menu. Expose the Watchlist data as properties so

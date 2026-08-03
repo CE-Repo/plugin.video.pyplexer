@@ -25,12 +25,12 @@
                 <item library="resources/lib/context_actions/mark_watched.py">
                     <!-- Mark as watched -->
                     <label>30792</label>
-                    <visible>String.IsEqual(ListItem.Property(PyPlexer.CanMarkWatched),true) + [String.IsEqual(ListItem.DBTYPE,video) | String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode)]</visible>
+                    <visible>String.IsEqual(ListItem.Property(PyPlexer.CanMarkWatched),true) + !String.IsEqual(ListItem.Property(PyPlexer.Watched),true) + [String.IsEqual(ListItem.DBTYPE,video) | String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode)]</visible>
                 </item>
                 <item library="resources/lib/context_actions/mark_unwatched.py">
                     <!-- Mark as unwatched -->
                     <label>30793</label>
-                    <visible>String.IsEqual(ListItem.Property(PyPlexer.CanMarkWatched),true) + [String.IsEqual(ListItem.DBTYPE,video) | String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode)]</visible>
+                    <visible>String.IsEqual(ListItem.Property(PyPlexer.CanMarkWatched),true) + String.IsEqual(ListItem.Property(PyPlexer.Watched),true) + [String.IsEqual(ListItem.DBTYPE,video) | String.IsEqual(ListItem.DBTYPE,movie) | String.IsEqual(ListItem.DBTYPE,tvshow) | String.IsEqual(ListItem.DBTYPE,season) | String.IsEqual(ListItem.DBTYPE,episode)]</visible>
                 </item>
                 <item library="resources/lib/context_actions/add_to_watchlist.py">
                     <!-- Add to the Plex Watchlist -->
