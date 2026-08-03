@@ -1728,7 +1728,7 @@ msgid "Preferred artwork language"
 msgstr ""
 
 msgctxt "#30846"
-msgid "Use localized thumbs and clearlogos from Fanart.tv and optionally TMDb, with Plex artwork as the final fallback."
+msgid "Use localized thumbs and clearlogos from Fanart.tv and optionally TMDb, with Plex as the final fallback. Large libraries load missing artwork in the background."
 msgstr ""
 
 msgctxt "#30848"
@@ -1745,4 +1745,8 @@ msgstr ""
 
 msgctxt "#30851"
 msgid "Optional. Enables the localized TMDb fallback; without it this step is skipped."
+msgstr ""
+
+msgctxt "#30853"
+msgid "Next page"
 msgstr ""

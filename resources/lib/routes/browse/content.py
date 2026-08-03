@@ -6,6 +6,7 @@ from urllib.parse import unquote
 import xbmc  # pylint: disable=import-error
 import xbmcplugin  # pylint: disable=import-error
 
+from artwork.fanart_tv import listing_url_with_guids
 from core.common import get_handle
 from core.constants import MODES
 from core.logger import Logger
@@ -17,6 +18,7 @@ from processing.artists import process_artists
 from processing.directories import process_directories
 from processing.episodes import process_episodes
 from processing.movies import process_movies
+from processing.pagination import paged_library_url
 from processing.photos import process_photos
 from processing.shows import process_shows
 from processing.tracks import process_tracks
@@ -54,7 +56,9 @@ def run(context, url=None, server_uuid=None, mode=None):
         url = search_url
 
     try:
-        tree = get_xml(context, url)
+        request_url = listing_url_with_guids(
+            context.settings, paged_library_url(context, url))
+        tree = get_xml(context, request_url)
         process(context, url, tree, last_bit)
 
     except Exception:  # pylint: disable=broad-except

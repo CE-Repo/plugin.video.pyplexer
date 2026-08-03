@@ -231,6 +231,7 @@ STRINGS = {
     'Already in the Watchlist': 30838,
     'Add/Remove from Watchlist': 30839,
     'Open folder': 30840,
+    'Next page': 30853,
 }
 
 

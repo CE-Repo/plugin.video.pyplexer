@@ -9,6 +9,8 @@ from core.utils import get_xml
 from gui.builders.movie import create_movie_item
 from gui.builders.photo import create_photo_item
 from gui.builders.track import create_track_item
+from processing.pagination import add_page_navigation
+from processing.pagination import paged_library_url
 
 
 def process_tracks(context, url, tree=None):
@@ -18,7 +20,7 @@ def process_tracks(context, url, tree=None):
     xbmcplugin.addSortMethod(get_handle(), xbmcplugin.SORT_METHOD_SONG_RATING)
     xbmcplugin.addSortMethod(get_handle(), xbmcplugin.SORT_METHOD_TRACKNUM)
 
-    tree = get_xml(context, url, tree)
+    tree = get_xml(context, paged_library_url(context, url), tree)
     if tree is None:
         return
 
@@ -48,6 +50,8 @@ def process_tracks(context, url, tree=None):
 
         if isinstance(content_counter.get(tag), int):
             content_counter[tag] += 1
+
+    add_page_navigation(context, url, tree, items)
 
     if items:
         content_type = 'songs'

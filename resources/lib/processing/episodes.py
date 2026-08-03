@@ -8,6 +8,8 @@ from core.logger import Logger
 from core.utils import attach_media_streams
 from core.utils import get_xml
 from gui.builders.episode import create_episode_item
+from processing.pagination import add_page_navigation
+from processing.pagination import paged_library_url
 
 LOG = Logger()
 
@@ -23,7 +25,7 @@ def process_episodes(context, url, tree=None, rating_key=None, library=False):
     else:
         server = context.plex_network.get_server_from_url(url)
 
-    tree = get_xml(context, url, tree)
+    tree = get_xml(context, paged_library_url(context, url), tree)
     if tree is None:
         return
 
@@ -52,6 +54,8 @@ def process_episodes(context, url, tree=None, rating_key=None, library=False):
     for episode in episodes:
         item = Item(server, url, tree, episode)
         append_item(create_episode_item(context, item, library=library))
+
+    add_page_navigation(context, url, tree, items)
 
     if items:
         xbmcplugin.addDirectoryItems(get_handle(), items, len(items))

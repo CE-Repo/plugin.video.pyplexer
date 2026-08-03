@@ -12,6 +12,7 @@ from urllib.parse import quote
 from urllib.parse import urlencode
 
 import requests
+import xbmcvfs  # pylint: disable=import-error
 
 from core.constants import CONFIG
 from core.logger import Logger
@@ -27,6 +28,8 @@ TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/original'
 THUMB_ATTRIBUTE = 'pyplexerFanartThumb'
 CLEARLOGO_ATTRIBUTE = 'pyplexerExternalClearlogo'
 MAX_WORKERS = 4
+SYNC_ITEM_LIMIT = 20
+BACKGROUND_BATCH_SIZE = 40
 GUID_BATCH_SIZE = 40
 THUMB_TTL = 7 * 24 * 60 * 60
 EMPTY_TTL = 24 * 60 * 60
@@ -44,10 +47,20 @@ def is_configured(settings):
                 (settings.fanart_personal_key() or settings.tmdb_api_key()))
 
 
+def listing_url_with_guids(settings, url):
+    """Ask Plex for provider ids in the original listing response."""
+    if (not is_configured(settings) or not str(url).startswith('http') or
+            'includeGuids=' in str(url)):
+        return url
+    separator = '&' if '?' in url else '?'
+    return '%s%sincludeGuids=1' % (url, separator)
+
+
 def clear_cache():
     """Remove cached external artwork hits and misses."""
     CacheControl('fanart_tv', True).delete_cache(True)
-    return CacheControl('tmdb', True).delete_cache(True)
+    CacheControl('tmdb', True).delete_cache(True)
+    return CacheControl('artwork_queue', True).delete_cache(True)
 
 
 def external_ids(data):
@@ -229,6 +242,12 @@ class FanartTvClient:
             'clearlogo': tuple(value.get('clearlogo') or ('', '')),
         }
 
+    def cached_artwork(self, media_type, provider, identifier):
+        """Read artwork without contacting Fanart.tv."""
+        if not identifier or (media_type == 'show' and provider != 'tvdb'):
+            return True, _empty_artwork()
+        return self._cached(self._cache_name(media_type, identifier))
+
     def _store(self, cache_name, artwork):
         available = any(url for values in artwork.values() for url in values)
         ttl = THUMB_TTL if available else EMPTY_TTL
@@ -378,6 +397,12 @@ class TmdbClient:
             'clearlogo': tuple(value.get('clearlogo') or ('', '')),
         }
 
+    def cached_artwork(self, media_type, identifiers):
+        """Read artwork without contacting TMDb."""
+        if not identifiers:
+            return True, _empty_artwork()
+        return self._cached(self._cache_name(media_type, identifiers))
+
     def _store(self, cache_name, artwork):
         available = any(url for values in artwork.values() for url in values)
         ttl = THUMB_TTL if available else EMPTY_TTL
@@ -446,6 +471,161 @@ class TmdbClient:
         return artwork
 
 
+def _fanart_identity(media_type, identifiers):
+    providers = ('tmdb', 'imdb') if media_type == 'movie' else ('tvdb',)
+    provider = next((name for name in providers if identifiers.get(name)), None)
+    return provider, identifiers.get(provider) if provider else ''
+
+
+def _choose_artwork(fanart_artwork, tmdb_artwork):
+    selected = {}
+    for kind in ('thumb', 'clearlogo'):
+        fanart_preferred, fanart_english = fanart_artwork[kind]
+        tmdb_preferred, tmdb_english = tmdb_artwork[kind]
+        selected[kind] = (fanart_preferred or fanart_english or
+                          tmdb_preferred or tmdb_english or '')
+    return selected
+
+
+def _fetch_external_artwork(fanart_client, tmdb_client, media_type,
+                            identifiers):
+    """Resolve and cache one title without letting either API break a list."""
+    fanart_artwork = _empty_artwork()
+    tmdb_artwork = _empty_artwork()
+    provider, identifier = _fanart_identity(media_type, identifiers)
+
+    if fanart_client is not None and identifier:
+        try:
+            fanart_artwork = fanart_client.artwork(
+                media_type, provider, identifier)
+        except Exception as error:  # pylint: disable=broad-except
+            fanart_client.disabled.set()
+            LOG.debug('Unexpected Fanart.tv error for %s %s: %s' %
+                      (media_type, identifier, error))
+
+    needs_tmdb = any(not (fanart_artwork[kind][0] or
+                          fanart_artwork[kind][1])
+                     for kind in ('thumb', 'clearlogo'))
+    if tmdb_client is not None and needs_tmdb:
+        try:
+            tmdb_artwork = tmdb_client.artwork(media_type, identifiers)
+        except Exception as error:  # pylint: disable=broad-except
+            tmdb_client.disabled.set()
+            LOG.debug('Unexpected TMDb error for %s: %s' %
+                      (media_type, error))
+
+    return _choose_artwork(fanart_artwork, tmdb_artwork)
+
+
+def _cached_external_artwork(fanart_client, tmdb_client, media_type,
+                             identifiers):
+    """Resolve one title from cache and report whether background work remains."""
+    fanart_artwork = _empty_artwork()
+    tmdb_artwork = _empty_artwork()
+    provider, identifier = _fanart_identity(media_type, identifiers)
+
+    if fanart_client is not None and identifier:
+        found, fanart_artwork = fanart_client.cached_artwork(
+            media_type, provider, identifier)
+        if not found:
+            # A lower-priority provider cannot be shown until Fanart.tv's
+            # preferred/English result is known.
+            return _choose_artwork(_empty_artwork(), _empty_artwork()), False
+
+    needs_tmdb = any(not (fanart_artwork[kind][0] or
+                          fanart_artwork[kind][1])
+                     for kind in ('thumb', 'clearlogo'))
+    if tmdb_client is not None and needs_tmdb:
+        found, tmdb_artwork = tmdb_client.cached_artwork(
+            media_type, identifiers)
+        if not found:
+            return _choose_artwork(fanart_artwork, _empty_artwork()), False
+
+    return _choose_artwork(fanart_artwork, tmdb_artwork), True
+
+
+class ArtworkQueue:
+    """Persistent, de-duplicated jobs consumed by PyPlexer's service."""
+
+    def __init__(self):
+        self.cache = CacheControl('artwork_queue', True)
+
+    @staticmethod
+    def _identity(identifiers):
+        return '|'.join('%s:%s' % (key, identifiers[key])
+                        for key in sorted(identifiers))
+
+    def enqueue(self, media_type, identifiers):
+        if self.cache.cache_location is None:
+            return False
+        name = self.cache.sha512_cache_name(
+            'artwork_job', media_type, self._identity(identifiers))
+        path = self.cache.cache_location + name
+        if xbmcvfs.exists(path):
+            return True
+        return self.cache.write_cache(name, {
+            'media_type': media_type,
+            'identifiers': dict(identifiers),
+        })
+
+    def jobs(self, limit=BACKGROUND_BATCH_SIZE):
+        if self.cache.cache_location is None:
+            return []
+        _, files = xbmcvfs.listdir(self.cache.cache_location)
+        jobs = []
+        for name in files:
+            if not name.endswith('.cache'):
+                continue
+            found, job = self.cache.read_cache(name)
+            if (found and isinstance(job, dict) and
+                    job.get('media_type') in ('movie', 'show') and
+                    isinstance(job.get('identifiers'), dict)):
+                jobs.append((name, job))
+            else:
+                self.remove(name)
+            if len(jobs) >= limit:
+                break
+        return jobs
+
+    def remove(self, name):
+        if self.cache.cache_location is None:
+            return False
+        return xbmcvfs.delete(self.cache.cache_location + name)
+
+
+def process_artwork_queue(settings, limit=BACKGROUND_BATCH_SIZE):
+    """Warm artwork caches in the background service, one bounded batch."""
+    queue = ArtworkQueue()
+    jobs = queue.jobs(limit)
+    if not jobs:
+        return 0
+    if not is_configured(settings):
+        queue.cache.delete_cache(True)
+        return 0
+
+    fanart_client = (FanartTvClient(settings)
+                     if settings.fanart_personal_key() else None)
+    tmdb_client = TmdbClient(settings) if settings.tmdb_api_key() else None
+
+    def process(job_entry):
+        name, job = job_entry
+        _fetch_external_artwork(
+            fanart_client, tmdb_client, job['media_type'], job['identifiers'])
+        return name
+
+    completed = 0
+    with ThreadPoolExecutor(max_workers=min(MAX_WORKERS, len(jobs))) as executor:
+        for name in executor.map(process, jobs):
+            queue.remove(name)
+            completed += 1
+    return completed
+
+
+def artwork_queue_pending():
+    """Return whether the background service still has artwork to fetch."""
+    return bool(ArtworkQueue().jobs(limit=1))
+
+
 def prefer_artwork(context, elements, media_type, server=None):
     """Resolve localized thumbs and clearlogos with the shared fallback order."""
     elements = list(elements)
@@ -476,53 +656,34 @@ def prefer_artwork(context, elements, media_type, server=None):
         identity = tuple(sorted(identifiers.items()))
         unique[identity] = ('', '')
 
-    def fetch(identity):
-        identifiers = dict(identity)
-        fanart_artwork = _empty_artwork()
-        tmdb_artwork = _empty_artwork()
+    if len(unique) > SYNC_ITEM_LIMIT:
+        queue = ArtworkQueue()
+        queued = 0
+        for identity in unique:
+            identifiers = dict(identity)
+            artwork, complete = _cached_external_artwork(
+                fanart_client, tmdb_client, media_type, identifiers)
+            unique[identity] = (artwork['thumb'], artwork['clearlogo'])
+            if not complete and queue.enqueue(media_type, identifiers):
+                queued += 1
+        LOG.debug('Large %s list: cache-only artwork, %s job(s) queued' %
+                  (media_type, queued))
+    else:
+        def fetch(identity):
+            artwork = _fetch_external_artwork(
+                fanart_client, tmdb_client, media_type, dict(identity))
+            return identity, (artwork['thumb'], artwork['clearlogo'])
 
-        if fanart_client is not None:
-            providers = ('tmdb', 'imdb') if media_type == 'movie' else ('tvdb',)
-            provider = next((name for name in providers
-                             if identifiers.get(name)), None)
-            identifier = identifiers.get(provider) if provider else ''
-            if identifier:
-                try:
-                    fanart_artwork = fanart_client.artwork(
-                        media_type, provider, identifier)
-                except Exception as error:  # pylint: disable=broad-except
-                    fanart_client.disabled.set()
-                    LOG.debug('Unexpected Fanart.tv error for %s %s: %s' %
-                              (media_type, identifier, error))
-
-        needs_tmdb = any(not (fanart_artwork[kind][0] or
-                              fanart_artwork[kind][1])
-                         for kind in ('thumb', 'clearlogo'))
-        if tmdb_client is not None and needs_tmdb:
-            try:
-                tmdb_artwork = tmdb_client.artwork(media_type, identifiers)
-            except Exception as error:  # pylint: disable=broad-except
-                tmdb_client.disabled.set()
-                LOG.debug('Unexpected TMDb error for %s: %s' %
-                          (media_type, error))
-
-        def choose(kind):
-            fanart_preferred, fanart_english = fanart_artwork[kind]
-            tmdb_preferred, tmdb_english = tmdb_artwork[kind]
-            return (fanart_preferred or fanart_english or
-                    tmdb_preferred or tmdb_english or '')
-
-        return identity, (choose('thumb'), choose('clearlogo'))
-
-    workers = min(MAX_WORKERS, len(unique))
-    with ThreadPoolExecutor(max_workers=workers) as executor:
-        for key, artwork in executor.map(fetch, unique):
-            unique[key] = artwork
+        workers = min(MAX_WORKERS, len(unique))
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            for key, artwork in executor.map(fetch, unique):
+                unique[key] = artwork
 
     thumbs_applied = 0
     logos_applied = 0
     for element, identifiers in identified:
-        thumb, clearlogo = unique.get(tuple(sorted(identifiers.items())), ('', ''))
+        identity = tuple(sorted(identifiers.items()))
+        thumb, clearlogo = unique.get(identity, ('', ''))
         if thumb:
             element.set(THUMB_ATTRIBUTE, thumb)
             thumbs_applied += 1

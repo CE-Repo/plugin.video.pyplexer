@@ -9,12 +9,14 @@ from gui.builders.directory import create_directory_item
 from gui.builders.movie import create_movie_item
 from gui.builders.photo import create_photo_item
 from gui.builders.track import create_track_item
+from processing.pagination import add_page_navigation
+from processing.pagination import paged_library_url
 
 
 def process_photos(context, url, tree=None):
     server = context.plex_network.get_server_from_url(url)
 
-    tree = get_xml(context, url, tree)
+    tree = get_xml(context, paged_library_url(context, url), tree)
     if tree is None:
         return
 
@@ -42,6 +44,8 @@ def process_photos(context, url, tree=None):
 
         if isinstance(content_counter.get(tag), int):
             content_counter[tag] += 1
+
+    add_page_navigation(context, url, tree, items)
 
     if items:
         content_type = 'images'

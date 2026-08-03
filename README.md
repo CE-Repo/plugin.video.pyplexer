@@ -169,7 +169,11 @@ A few worth knowing about:
   language, while a two-letter code such as `de` or `en` overrides it. API
   errors advance to the next fallback and results are cached for seven days.
   Thumbs are exposed as Kodi `landscape` artwork; poster views continue to
-  display Plex's portrait poster.
+  display Plex's portrait poster. Full movie and TV-show libraries are loaded
+  server-side in pages of 100 titles. Lists of up to 20 titles resolve missing
+  artwork immediately; library pages open from cache without waiting for
+  external APIs. PyPlexer's service fills missing artwork in the background
+  and refreshes an open PyPlexer list once the queue is complete.
 - **Server name prefix on the main menu** (*Look and Feel*) — `Default` adds the
   server name only when more than one server is present, `Always` adds it even
   with a single server.

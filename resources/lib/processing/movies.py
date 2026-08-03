@@ -5,6 +5,7 @@ import time
 import xbmcplugin  # pylint: disable=import-error
 
 from artwork.fanart_tv import prefer_artwork
+from artwork.fanart_tv import listing_url_with_guids
 from core.common import get_handle
 from core.context import Item
 from core.logger import Logger
@@ -13,6 +14,8 @@ from core.utils import get_xml
 from gui.builders.movie import create_movie_item
 from gui.builders.photo import create_photo_item
 from gui.builders.track import create_track_item
+from processing.pagination import add_page_navigation
+from processing.pagination import paged_library_url
 
 LOG = Logger()
 
@@ -21,7 +24,9 @@ def process_movies(context, url, tree=None):
     # get the server name from the URL, which was passed via the on screen listing..
     server = context.plex_network.get_server_from_url(url)
 
-    tree = get_xml(context, url, tree)
+    request_url = listing_url_with_guids(
+        context.settings, paged_library_url(context, url))
+    tree = get_xml(context, request_url, tree)
     if tree is None:
         return
 
@@ -51,6 +56,8 @@ def process_movies(context, url, tree=None):
             append_item(create_track_item(context, item))
         elif branch.tag.lower() == 'photo':  # mixed content video playlist
             append_item(create_photo_item(context, item))
+
+    add_page_navigation(context, url, tree, items)
 
     if items:
         content_type = 'movies'

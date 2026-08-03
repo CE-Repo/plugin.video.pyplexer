@@ -1722,8 +1722,8 @@ msgid "Preferred artwork language"
 msgstr "Bevorzugte Bildsprache"
 
 msgctxt "#30846"
-msgid "Use localized thumbs and clearlogos from Fanart.tv and optionally TMDb, with Plex artwork as the final fallback."
-msgstr "Lokalisierte Thumbs und Clearlogos von Fanart.tv und optional TMDb verwenden; Plex dient als letzter Fallback."
+msgid "Use localized thumbs and clearlogos from Fanart.tv and optionally TMDb, with Plex as the final fallback. Large libraries load missing artwork in the background."
+msgstr "Lokalisierte Thumbs und Clearlogos von Fanart.tv und optional TMDb verwenden; Plex dient als letzter Fallback. Große Bibliotheken laden fehlende Bilder im Hintergrund."
 
 msgctxt "#30848"
 msgid "Enter your personal API key from Fanart.tv."
@@ -1740,6 +1740,10 @@ msgstr "TMDb-API-Schlüssel oder Lesezugriffstoken (optional)"
 msgctxt "#30851"
 msgid "Optional. Enables the localized TMDb fallback; without it this step is skipped."
 msgstr "Optional. Aktiviert den lokalisierten TMDb-Fallback; ohne Schlüssel wird dieser Schritt übersprungen."
+
+msgctxt "#30853"
+msgid "Next page"
+msgstr "Nächste Seite"
 
 #~ msgctxt "#30689"
 #~ msgid "Up Next requires Kodi 18 or higher"

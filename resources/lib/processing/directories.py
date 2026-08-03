@@ -6,6 +6,7 @@ from core.common import get_handle
 from core.context import Item
 from core.logger import Logger
 from gui.builders.directory import create_directory_item
+from processing.pagination import add_page_navigation
 
 LOG = Logger()
 
@@ -28,6 +29,8 @@ def process_directories(context, url, tree=None):
     for directory in directories:
         item = Item(server, url, tree, directory)
         append_item(create_directory_item(context, item))
+
+    add_page_navigation(context, url, tree, items)
 
     if items:
         xbmcplugin.addDirectoryItems(get_handle(), items, len(items))

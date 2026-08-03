@@ -6,6 +6,8 @@ from core.common import get_handle
 from core.context import Item
 from core.utils import get_xml
 from gui.builders.artist import create_artist_item
+from processing.pagination import add_page_navigation
+from processing.pagination import paged_library_url
 
 
 def process_artists(context, url, tree=None):
@@ -22,7 +24,7 @@ def process_artists(context, url, tree=None):
     xbmcplugin.addSortMethod(get_handle(), xbmcplugin.SORT_METHOD_VIDEO_YEAR)
 
     # Get the URL and server name.  Get the XML and parse
-    tree = get_xml(context, url, tree)
+    tree = get_xml(context, paged_library_url(context, url), tree)
     if tree is None:
         return
 
@@ -35,6 +37,8 @@ def process_artists(context, url, tree=None):
     for artist in artists:
         item = Item(server, url, tree, artist)
         append_item(create_artist_item(context, item))
+
+    add_page_navigation(context, url, tree, items)
 
     if items:
         xbmcplugin.addDirectoryItems(get_handle(), items, len(items))

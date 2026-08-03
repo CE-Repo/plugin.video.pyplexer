@@ -3,10 +3,13 @@
 import xbmcplugin  # pylint: disable=import-error
 
 from artwork.fanart_tv import prefer_artwork
+from artwork.fanart_tv import listing_url_with_guids
 from core.common import get_handle
 from core.context import Item
 from core.utils import get_xml
 from gui.builders.show import create_show_item
+from processing.pagination import add_page_navigation
+from processing.pagination import paged_library_url
 
 
 def process_shows(context, url, tree=None):
@@ -20,7 +23,9 @@ def process_shows(context, url, tree=None):
     xbmcplugin.addSortMethod(get_handle(), xbmcplugin.SORT_METHOD_MPAA_RATING)
 
     # Get the URL and server name.  Get the XML and parse
-    tree = get_xml(context, url, tree)
+    request_url = listing_url_with_guids(
+        context.settings, paged_library_url(context, url))
+    tree = get_xml(context, request_url, tree)
     if tree is None:
         return
 
@@ -35,6 +40,8 @@ def process_shows(context, url, tree=None):
     for show in shows:
         item = Item(server, url, tree, show)
         append_item(create_show_item(context, item))
+
+    add_page_navigation(context, url, tree, items)
 
     if items:
         xbmcplugin.addDirectoryItems(get_handle(), items, len(items))
