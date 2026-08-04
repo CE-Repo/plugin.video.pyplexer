@@ -5,6 +5,8 @@ import xml.etree.ElementTree as ETree
 import xbmc  # pylint: disable=import-error
 import xbmcplugin  # pylint: disable=import-error
 
+from artwork.fanart_tv import prefer_artwork
+from artwork.fanart_tv import prefer_episode_artwork
 from core.common import get_handle
 from core.constants import MODES
 from core.context import Item
@@ -251,10 +253,15 @@ def _list_content(context, server, section, start, size):
         10: 'Track'
     }
 
-    branches = tree.iter(iter_types.get(item_type, 'Directory'))
+    branches = list(tree.iter(iter_types.get(item_type, 'Directory')))
 
     if not branches:
         return [], total
+
+    if item_type in (1, 2):
+        prefer_artwork(context, branches, 'movie' if item_type == 1 else 'show', server)
+    elif item_type == 4:
+        prefer_episode_artwork(context, branches, server)
 
     items = []
     for content in branches:

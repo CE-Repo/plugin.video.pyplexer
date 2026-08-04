@@ -2,6 +2,7 @@
 
 import xbmcplugin  # pylint: disable=import-error
 
+from artwork.fanart_tv import prefer_episode_artwork
 from core.common import get_handle
 from core.context import Item
 from core.logger import Logger
@@ -50,6 +51,7 @@ def process_episodes(context, url, tree=None, rating_key=None, library=False):
     # a season fits in one lookup, so the flags say Dolby Vision Profile 7 and
     # not just Dolby Vision
     attach_media_streams(server, episodes)
+    prefer_episode_artwork(context, episodes, server)
 
     for episode in episodes:
         item = Item(server, url, tree, episode)

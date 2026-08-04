@@ -385,6 +385,12 @@ def run(start_time):  # pylint: disable=too-many-locals, too-many-statements, to
         combined_sections.run(context)
         return _finished(start_time)
 
+    if mode == MODES.CONTINUE_WATCHING:
+        from routes.browse import on_deck
+        context.params['content_type'] = None
+        on_deck.run(context)
+        return _finished(start_time)
+
     if mode == MODES.TVSHOWS_ON_DECK:
         from routes.browse import on_deck
         context.params['content_type'] = 'tvshows'

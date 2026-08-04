@@ -35,6 +35,17 @@ def get_menu_items(context):
     items = []
 
     details = {
+        'title': i18n('Continue Watching')
+    }
+    extra_data = {
+        'type': 'Folder',
+        'mode': MODES.CONTINUE_WATCHING
+    }
+
+    gui_item = GUIItem('/library/onDeck', details, extra_data)
+    items.append(create_gui_item(context, gui_item))
+
+    details = {
         'title': i18n('TV Shows on Deck')
     }
     extra_data = {

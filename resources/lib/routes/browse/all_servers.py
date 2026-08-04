@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ETree
 
 import xbmcplugin  # pylint: disable=import-error
 
+from artwork.fanart_tv import prefer_artwork
 from core.common import get_handle
 from core.constants import MODES
 from core.context import Item
@@ -148,11 +149,15 @@ def _list_content(context, server, section, start, size):
     except (TypeError, ValueError):
         total = 0
 
-    iter_type = 'Video' if get_section_type(context) == 'movie' else 'Directory'
-    branches = tree.iter(iter_type)
+    section_type = get_section_type(context)
+    iter_type = 'Video' if section_type == 'movie' else 'Directory'
+    branches = list(tree.iter(iter_type))
 
     if not branches:
         return [], total
+
+    if section_type in ('movie', 'show'):
+        prefer_artwork(context, branches, section_type, server)
 
     items = []
     for content in branches:

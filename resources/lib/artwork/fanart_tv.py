@@ -8,6 +8,7 @@ import json
 import re
 import threading
 import time
+import xml.etree.ElementTree as ETree
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import quote
 from urllib.parse import urlencode
@@ -779,3 +780,41 @@ def prefer_artwork(context, elements, media_type, server=None):
 def prefer_thumbs(context, elements, media_type, server=None):
     """Backward-compatible alias for the external artwork resolver."""
     return prefer_artwork(context, elements, media_type, server)
+
+
+def prefer_episode_artwork(context, episodes, server=None):
+    """Resolve external clearlogos and TMDb backgrounds for episodes.
+
+    Fanart.tv/TMDb only know shows, not individual episodes, so the lookup is
+    keyed by each episode's show (``grandparentRatingKey``) through one
+    synthetic element per show, reusing the same cached/batched resolution as
+    a show listing. Only the clearlogo and the TMDb backgrounds are copied
+    onto the episodes: an episode's own thumb is its screencap and must never
+    be replaced by the show's poster.
+    """
+    episodes = list(episodes)
+    if not episodes or not is_configured(context.settings):
+        return
+
+    by_show = {}
+    for episode in episodes:
+        show_key = episode.get('grandparentRatingKey')
+        if show_key:
+            by_show.setdefault(show_key, []).append(episode)
+
+    if not by_show:
+        return
+
+    shows = [ETree.Element('Directory', {'ratingKey': show_key}) for show_key in by_show]
+    prefer_artwork(context, shows, 'show', server)
+
+    for show in shows:
+        clearlogo = show.get(CLEARLOGO_ATTRIBUTE)
+        backgrounds = show.get(TMDB_BACKGROUNDS_ATTRIBUTE)
+        if not clearlogo and not backgrounds:
+            continue
+        for episode in by_show[show.get('ratingKey')]:
+            if clearlogo:
+                episode.set(CLEARLOGO_ATTRIBUTE, clearlogo)
+            if backgrounds:
+                episode.set(TMDB_BACKGROUNDS_ATTRIBUTE, backgrounds)

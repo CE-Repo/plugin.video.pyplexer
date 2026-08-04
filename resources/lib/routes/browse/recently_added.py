@@ -2,6 +2,8 @@
 
 import xbmcplugin  # pylint: disable=import-error
 
+from artwork.fanart_tv import prefer_artwork
+from artwork.fanart_tv import prefer_episode_artwork
 from core.common import get_handle
 from core.context import Item
 from core.logger import Logger
@@ -43,10 +45,15 @@ def _list_content(context, server, section):
     if tree is None:
         return []
 
-    branches = tree.iter('Video')
+    branches = list(tree.iter('Video'))
 
     if not branches:
         return []
+
+    episodes = [content for content in branches if content.get('type') == 'episode']
+    movies = [content for content in branches if content.get('type') == 'movie']
+    prefer_artwork(context, movies, 'movie', server)
+    prefer_episode_artwork(context, episodes, server)
 
     items = []
     append_item = items.append
