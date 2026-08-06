@@ -129,6 +129,12 @@ def run(start_time):  # pylint: disable=too-many-locals, too-many-statements, to
         watch_status.run(context)
         return _finished(start_time)
 
+    # Hide an item from the Continue Watching hub
+    if command == COMMANDS.REMOVE_ON_DECK:
+        from routes.library import continue_watching
+        continue_watching.remove(context)
+        return _finished(start_time)
+
     # delete media from PMS
     if command == COMMANDS.DELETE:
         from routes.library import delete_media

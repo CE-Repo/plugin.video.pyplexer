@@ -1750,3 +1750,15 @@ msgstr ""
 msgctxt "#30853"
 msgid "Next page"
 msgstr ""
+
+msgctxt "#30854"
+msgid "Remove from Continue Watching"
+msgstr ""
+
+msgctxt "#30855"
+msgid "Removed from Continue Watching"
+msgstr ""
+
+msgctxt "#30856"
+msgid "Could not remove from Continue Watching"
+msgstr ""

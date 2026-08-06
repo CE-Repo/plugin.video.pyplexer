@@ -1551,7 +1551,7 @@ msgstr "Konfigurierte Bibliotheksbereiche wurden zurückgesetzt"
 
 msgctxt "#30800"
 msgid "Continue Watching"
-msgstr "Weiterschauen"
+msgstr "Fortsetzen"
 
 msgctxt "#30801"
 msgid "Detect Servers"
@@ -1744,6 +1744,18 @@ msgstr "Optional. Aktiviert den lokalisierten TMDb-Fallback; ohne Schlüssel wir
 msgctxt "#30853"
 msgid "Next page"
 msgstr "Nächste Seite"
+
+msgctxt "#30854"
+msgid "Remove from Continue Watching"
+msgstr "Aus „Fortsetzen“ entfernen"
+
+msgctxt "#30855"
+msgid "Removed from Continue Watching"
+msgstr "Aus „Fortsetzen“ entfernt"
+
+msgctxt "#30856"
+msgid "Could not remove from Continue Watching"
+msgstr "Konnte nicht aus „Fortsetzen“ entfernt werden"
 
 #~ msgctxt "#30689"
 #~ msgid "Up Next requires Kodi 18 or higher"

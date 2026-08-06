@@ -31,6 +31,7 @@ COMMANDS = __enum(
     SWITCHUSER='switchuser',
     UPDATE='update',
     WATCH='watch',
+    REMOVE_ON_DECK='remove_on_deck',
     TEST_SKIP_INTRO_DIALOG='test_skip_intro_dialog',
     MANAGE_PLAYLIST='pyplexer_playlist',
     SELECT_LIBRARY_SECTIONS='select_library_sections',

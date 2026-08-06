@@ -232,6 +232,9 @@ STRINGS = {
     'Add/Remove from Watchlist': 30839,
     'Open folder': 30840,
     'Next page': 30853,
+    'Remove from Continue Watching': 30854,
+    'Removed from Continue Watching': 30855,
+    'Could not remove from Continue Watching': 30856,
 }
 
 

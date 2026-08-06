@@ -2,6 +2,7 @@
 
 __all__ = [
     'configure_sections',
+    'continue_watching',
     'delete_and_refresh',
     'delete_media',
     'kodi_export',

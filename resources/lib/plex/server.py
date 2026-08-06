@@ -954,6 +954,33 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
         }
         self.talk(self._update_path('/:/unscrobble', options))
 
+    def remove_from_continue_watching(self, media_id):
+        """Hide an item from the server's Continue Watching / On Deck hub.
+
+        Plex keeps the watch progress, it only stops offering the item, which
+        is what the Plex apps do for their own 'Remove from Continue Watching'.
+        The endpoint needs PMS 1.31 or newer; older servers answer with an
+        error, which ``_talked_to_server()`` reports back as a failure.
+        """
+        options = {
+            'ratingKey': media_id,
+        }
+        data = self.tell(self._update_path('/actions/removeFromContinueWatching', options))
+        return self._talked_to_server(data)
+
+    @staticmethod
+    def _talked_to_server(data):
+        """False when talk() returned one of its generated status messages
+        instead of the server's own (usually empty) response body."""
+        if data is None:
+            return False
+
+        if isinstance(data, bytes):
+            data = data.decode('utf-8', 'replace')
+
+        return not any('<message status="%s">' % status in data
+                       for status in ('error', 'offline', 'unauthorized'))
+
     def refresh_section(self, key):
         return self.talk(self._update_path('/library/sections/%s/refresh' % key))
 

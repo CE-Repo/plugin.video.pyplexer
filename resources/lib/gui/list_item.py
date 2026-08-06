@@ -9,11 +9,22 @@ from infotagger.listitem import ListItemInfoTag  # pylint: disable=import-error
 
 from core.common import get_argv
 from core.common import get_current_plugin_url
+from core.constants import MODES
 from core.logger import Logger
 from core.strings import i18n
 from core.strings import item_translate
 
 LOG = Logger()
+
+# Every listing that is fed by a Plex onDeck hub, either through one of the
+# add-on's own Continue Watching modes or through a section's On Deck folder
+ON_DECK_MODES = (
+    str(MODES.CONTINUE_WATCHING),
+    str(MODES.TVSHOWS_ON_DECK),
+    str(MODES.MOVIES_ON_DECK),
+    MODES.TXT_MOVIES_ON_DECK,
+    MODES.TXT_TVSHOWS_ON_DECK,
+)
 
 
 def create_gui_item(context, item):
@@ -159,6 +170,16 @@ def _get_art(item):
     return art
 
 
+def _is_on_deck_listing(context):
+    """True while one of the Continue Watching / On Deck listings is built."""
+    if str(context.params.get('mode', '')) in ON_DECK_MODES:
+        return True
+
+    # a library section's own On Deck folder is browsed by its Plex URL
+    url = context.params.get('url') or ''
+    return urlparse(url).path.rstrip('/').endswith('onDeck')
+
+
 def _get_properties(context, item):
     item_properties = {}
 
@@ -171,6 +192,10 @@ def _get_properties(context, item):
             item_properties['PyPlexer.Watched'] = (
                 'true' if int(item.info_labels.get('playcount', 0) or 0) > 0
                 else 'false')
+            # only items the server actually offers in a hub can be taken
+            # out of it again, so the action stays hidden elsewhere
+            if not item.is_folder and _is_on_deck_listing(context):
+                item_properties['PyPlexer.OnDeck'] = 'true'
 
     # Context items added through ListItem.addContextMenuItems() always appear
     # in Kodi's main context menu. Expose the Watchlist data as properties so
