@@ -815,28 +815,26 @@ class MediaSelect:
                     else:
                         # else assume its a file local to server available over smb/samba.
                         # Add server name to file path.
+                        if override_info.get('override') and override_info.get('root'):
+                            filename = self._strip_nas_root(filename, override_info.get('root'))
                         self.media_url = '%s://%s%s%s' % (protocol, login_string, server, filename)
-
-            # nas override
-            self._nas_override()
 
             return self.media_url is not None
 
         return False
 
-    def _nas_override(self):
-        override_info = self.context.settings.override_info()
-        if override_info.get('override') and override_info.get('root'):
-            # Re-root the file path
-            LOG.debug('Altering path %s so root is: %s' %
-                      (self.media_url, override_info.get('root')))
-            if '/' + override_info.get('root') + '/' in self.media_url:
-                components = self.media_url.split('/')
-                index = components.index(override_info.get('root'))
-                pop = components.pop
-                for _ in range(3, index):
-                    pop(3)
-                self.media_url = '/'.join(components)
+    @staticmethod
+    def _strip_nas_root(filename, root):
+        # Discard everything before the root folder so only the NAS-side
+        # path (root onward) remains; server/share prefix is added by the caller.
+        marker = '/' + root + '/'
+        position = filename.find(marker)
+        if position == -1:
+            LOG.debug('NAS root override "%s" not found in path %s' % (root, filename))
+            return filename
+
+        LOG.debug('Altering path %s so root is: %s' % (filename, root))
+        return filename[position:]
 
 
 def play_playlist(context, server, data):
