@@ -85,6 +85,19 @@ def run(context, content_filter=None, display_shared=False):
         gui_item = GUIItem('http://discover', details, extra_data)
         append_item(create_gui_item(context, gui_item))
 
+    # a DVR belongs to a server, the free channels to the account; one entry
+    # gathers both, so it is not tied to being signed in
+    if menus.get('live_tv'):
+        details = {
+            'title': i18n('Live TV')
+        }
+        extra_data = {
+            'type': 'Folder',
+            'mode': MODES.LIVETV
+        }
+        gui_item = GUIItem('http://livetv', details, extra_data)
+        append_item(create_gui_item(context, gui_item))
+
     items += server_additional_menu_items(context, server_list, content_filter, menus)
     items += action_menu_items(context)
     items = paginate_local_items(context, items)

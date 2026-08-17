@@ -68,6 +68,7 @@ in to myPlex.
 | Playlists | Playlists stored on a server | Signed in to myPlex |
 | PyPlexer Playlist | Builds a playlist from criteria you pick | Signed in to myPlex |
 | myPlex Queue | Your myPlex watch later queue | Signed in to myPlex |
+| Live TV | Channels of a tuner attached to a server, plus Plex' own free channels | Always |
 | Widgets | Paths intended for skin home-screen widgets | Always |
 | Switch User | Change Plex Home user | Plex Home is enabled |
 | Sign In / Sign Out | myPlex account | Always |

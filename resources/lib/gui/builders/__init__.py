@@ -6,6 +6,7 @@ __all__ = [
     'common',
     'directory',
     'episode',
+    'live_tv',
     'movie',
     'music',
     'photo',

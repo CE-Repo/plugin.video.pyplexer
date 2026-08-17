@@ -861,6 +861,11 @@
                     <default>true</default>
                     <control type="toggle"/>
                 </setting>
+                <setting id="show_live_tv_menu" type="boolean" label="30862" help="30865">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
             </group>
             <group id="3" label="30719">
                 <setting id="skipcontextmenus" type="boolean" label="30552" help="">

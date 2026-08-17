@@ -4,6 +4,7 @@ __all__ = [
     'all_servers',
     'combined_sections',
     'content',
+    'live_tv',
     'myplex_queue',
     'on_deck',
     'recently_added',

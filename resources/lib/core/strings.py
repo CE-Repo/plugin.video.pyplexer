@@ -230,6 +230,9 @@ STRINGS = {
     'Remove from Continue Watching': 30854,
     'Removed from Continue Watching': 30855,
     'Could not remove from Continue Watching': 30856,
+    'Live TV': 30861,
+    'No Live TV channels found': 30863,
+    'Could not start the channel': 30864,
 }
 
 

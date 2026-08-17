@@ -1750,3 +1750,23 @@ msgstr ""
 msgctxt "#30860"
 msgid "Show a whole listing on one page, without splitting it up. Large libraries then need noticeably longer to open."
 msgstr ""
+
+msgctxt "#30861"
+msgid "Live TV"
+msgstr ""
+
+msgctxt "#30862"
+msgid "Show [B]Live TV[/B] menu"
+msgstr ""
+
+msgctxt "#30863"
+msgid "No Live TV channels found"
+msgstr ""
+
+msgctxt "#30864"
+msgid "Could not start the channel"
+msgstr ""
+
+msgctxt "#30865"
+msgid "Lists the channels of a tuner attached to a server, plus the free channels Plex serves itself once you are signed in to myPlex."
+msgstr ""

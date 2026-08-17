@@ -39,6 +39,8 @@ WINDOW = xbmcgui.Window(10000)
 # plex.tv account providers for Watchlist / Discover (not tied to a PMS)
 PROVIDER_METADATA = 'https://metadata.provider.plex.tv'
 PROVIDER_DISCOVER = 'https://discover.provider.plex.tv'
+#: Guide and lineup of the free channels Plex serves itself
+PROVIDER_EPG = 'https://epg.provider.plex.tv'
 
 #: The Watchlist is handed out in pages; asked for in one go the provider still
 #: answers with what it considers a container, so the pages are counted through.
@@ -541,6 +543,10 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
             return None
 
         return response.text
+
+    def provider_xml(self, base, path):
+        """Fetch one provider path, parsed; None when it does not answer."""
+        return self._parse_provider_xml(self.talk_to_provider(base, path))
 
     @staticmethod
     def _parse_provider_xml(data):

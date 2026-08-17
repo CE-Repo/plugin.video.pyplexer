@@ -1745,6 +1745,26 @@ msgctxt "#30860"
 msgid "Show a whole listing on one page, without splitting it up. Large libraries then need noticeably longer to open."
 msgstr "Zeigt eine Liste vollständig auf einer Seite, ohne sie aufzuteilen. Große Bibliotheken brauchen dann spürbar länger zum Öffnen."
 
+msgctxt "#30861"
+msgid "Live TV"
+msgstr "Live-TV"
+
+msgctxt "#30862"
+msgid "Show [B]Live TV[/B] menu"
+msgstr "Menüpunkt [B]Live-TV[/B] anzeigen"
+
+msgctxt "#30863"
+msgid "No Live TV channels found"
+msgstr "Keine Live-TV-Sender gefunden"
+
+msgctxt "#30864"
+msgid "Could not start the channel"
+msgstr "Sender konnte nicht gestartet werden"
+
+msgctxt "#30865"
+msgid "Lists the channels of a tuner attached to a server, plus the free channels Plex serves itself once you are signed in to myPlex."
+msgstr "Zeigt die Sender eines am Server angeschlossenen Tuners sowie die Gratis-Sender von Plex, sobald du bei myPlex angemeldet bist."
+
 #~ msgctxt "#30689"
 #~ msgid "Up Next requires Kodi 18 or higher"
 #~ msgstr "‚Up Next‘ benötigt Kodi 18 oder höher"

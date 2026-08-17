@@ -171,6 +171,7 @@ class AddonSettings:  # pylint: disable=too-many-public-methods
             'pyplexer_playlist': self._get_setting('show_pyplexer_playlist_menu'),
             'watchlist': self._get_setting('show_watchlist_menu'),
             'discover': self._get_setting('show_discover_menu'),
+            'live_tv': self._get_setting('show_live_tv_menu'),
         }
 
     def episode_sort_method(self):

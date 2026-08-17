@@ -2,6 +2,7 @@
 
 __all__ = [
     'library_media',
+    'live_tv',
     'media_stream',
     'video_channel',
 ]

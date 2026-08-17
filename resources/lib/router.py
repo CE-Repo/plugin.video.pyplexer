@@ -291,6 +291,16 @@ def run(start_time):  # pylint: disable=too-many-locals, too-many-statements, to
         })
         return _finished(start_time)
 
+    if mode == MODES.LIVETV:
+        from routes.browse import live_tv
+        live_tv.run(context)
+        return _finished(start_time)
+
+    if mode == MODES.LIVETVPLAY:
+        from routes.play import live_tv as play_live_tv
+        play_live_tv.run(context)
+        return _finished(start_time)
+
     if mode == MODES.MYPLEXQUEUE:
         from routes.browse import myplex_queue
         myplex_queue.run(context)
