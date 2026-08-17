@@ -139,6 +139,12 @@ class AddonSettings:  # pylint: disable=too-many-public-methods
     def prefix_server_in_combined(self):
         return self._get_setting('prefix_server_sections')
 
+    def items_per_page(self):
+        return self._get_setting('items_per_page')
+
+    def items_per_page_unlimited(self):
+        return self._get_setting('items_per_page_unlimited')
+
     def recently_added_item_count(self):
         return int(self._get_setting('ra_sections_items_per_server'))
 

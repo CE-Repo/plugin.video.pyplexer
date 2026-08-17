@@ -13,16 +13,40 @@ from urllib.parse import urlunsplit
 import xbmcgui  # pylint: disable=import-error
 
 from core.constants import CONFIG
+from core.settings import AddonSettings
 from core.strings import i18n_or
 
-PAGE_SIZE = 100
+MINIMUM_PAGE_SIZE = 100
+MAXIMUM_PAGE_SIZE = 2000
+DEFAULT_PAGE_SIZE = 500
+
+#: Everything on one page; the same value Plex requests use for 'no limit'.
+UNLIMITED = 0
 
 _INTERNAL_PARAMETERS = ('command', 'path_mode', 'page')
+
+_PAGE_SIZE = None
+
+
+def page_size():
+    """Return the items per page, or ``UNLIMITED`` for one unsplit listing."""
+    global _PAGE_SIZE  # pylint: disable=global-statement
+    if _PAGE_SIZE is None:
+        settings = AddonSettings()
+        if settings.items_per_page_unlimited():
+            _PAGE_SIZE = UNLIMITED
+        else:
+            try:
+                value = int(settings.items_per_page())
+            except (TypeError, ValueError):
+                value = DEFAULT_PAGE_SIZE
+            _PAGE_SIZE = min(MAXIMUM_PAGE_SIZE, max(MINIMUM_PAGE_SIZE, value))
+    return _PAGE_SIZE
 
 
 def is_paged_listing(url):
     """Return whether ``url`` can represent a remote Plex container."""
-    if not url:
+    if not url or page_size() == UNLIMITED:
         return False
     try:
         parts = urlsplit(str(url))
@@ -32,7 +56,9 @@ def is_paged_listing(url):
             if name.lower() != 'x-plex-container-size':
                 continue
             try:
-                return int(value) >= PAGE_SIZE
+                # A URL asking for a handful of items (a widget row, for
+                # example) is left alone whatever page size the user picked.
+                return int(value) >= MINIMUM_PAGE_SIZE
             except (TypeError, ValueError):
                 return True
         return True
@@ -59,9 +85,10 @@ def paged_listing_url(context, url):
              parse_qsl(parts.query, keep_blank_values=True)
              if name.lower() not in
              ('x-plex-container-start', 'x-plex-container-size')]
+    size = page_size()
     query.extend((
-        ('X-Plex-Container-Start', (page_number(context) - 1) * PAGE_SIZE),
-        ('X-Plex-Container-Size', PAGE_SIZE),
+        ('X-Plex-Container-Start', (page_number(context) - 1) * size),
+        ('X-Plex-Container-Size', size),
     ))
     return urlunsplit((parts.scheme, parts.netloc, parts.path,
                        urlencode(query), parts.fragment))
@@ -96,19 +123,20 @@ def add_page_navigation(context, url, tree, items):
     if tree is None or not is_paged_listing(url):
         return items
 
+    size = page_size()
     current_page = page_number(context)
     returned = _integer(tree.get('size'), len(tree))
     total_value = tree.get('totalSize')
     total_known = total_value is not None
     total = _integer(total_value, returned)
-    total = max(total, ((current_page - 1) * PAGE_SIZE) + returned)
-    total_pages = max(current_page, int(math.ceil(float(total) / PAGE_SIZE)))
+    total = max(total, ((current_page - 1) * size) + returned)
+    total_pages = max(current_page, int(math.ceil(float(total) / size)))
 
     has_next = current_page < total_pages
     # Older Plex versions may omit totalSize. A full page then signals that
     # another request is worth offering; an empty/partial page is the end.
     if not total_known:
-        has_next = returned >= PAGE_SIZE
+        has_next = returned >= size
 
     next_item = None
     if has_next:
@@ -125,9 +153,13 @@ def add_page_navigation(context, url, tree, items):
 def paginate_local_items(context, items):
     """Slice a list assembled locally and append its next-page folder."""
     items = list(items)
+    size = page_size()
+    if size == UNLIMITED:
+        return items
+
     total = len(items)
-    start = (page_number(context) - 1) * PAGE_SIZE
-    page_items = items[start:start + PAGE_SIZE]
+    start = (page_number(context) - 1) * size
+    page_items = items[start:start + size]
     container = ETree.Element('MediaContainer', {
         'size': str(len(page_items)),
         'totalSize': str(total),

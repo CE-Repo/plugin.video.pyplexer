@@ -1757,6 +1757,22 @@ msgctxt "#30856"
 msgid "Could not remove from Continue Watching"
 msgstr "Konnte nicht aus „Fortsetzen“ entfernt werden"
 
+msgctxt "#30857"
+msgid "Items per page"
+msgstr "Einträge pro Seite"
+
+msgctxt "#30858"
+msgid "How many items a listing shows before the 'Next page' entry appears. Higher values need longer to load and more memory."
+msgstr "Wie viele Einträge eine Liste anzeigt, bevor der Eintrag „Nächste Seite“ erscheint. Höhere Werte brauchen länger zum Laden und mehr Speicher."
+
+msgctxt "#30859"
+msgid "Unlimited (show all at once)"
+msgstr "Unbegrenzt (alle auf einmal anzeigen)"
+
+msgctxt "#30860"
+msgid "Show a whole listing on one page, without splitting it up. Large libraries then need noticeably longer to open."
+msgstr "Zeigt eine Liste vollständig auf einer Seite, ohne sie aufzuteilen. Große Bibliotheken brauchen dann spürbar länger zum Öffnen."
+
 #~ msgctxt "#30689"
 #~ msgid "Up Next requires Kodi 18 or higher"
 #~ msgstr "‚Up Next‘ benötigt Kodi 18 oder höher"

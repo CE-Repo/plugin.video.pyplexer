@@ -775,6 +775,28 @@
                     </constraints>
                     <control type="spinner" format="string"/>
                 </setting>
+                <setting id="items_per_page_unlimited" type="boolean" label="30859" help="30860">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="items_per_page" type="integer" label="30857" help="30858" parent="items_per_page_unlimited">
+                    <level>0</level>
+                    <default>500</default>
+                    <constraints>
+                        <minimum>100</minimum>
+                        <step>100</step>
+                        <maximum>2000</maximum>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="enable">
+                            <condition operator="is" setting="items_per_page_unlimited">false</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                </setting>
             </group>
             <group id="2" label="30714">
                 <setting id="prefix_server" type="integer" label="30669" help="">

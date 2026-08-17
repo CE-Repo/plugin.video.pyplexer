@@ -1762,3 +1762,19 @@ msgstr ""
 msgctxt "#30856"
 msgid "Could not remove from Continue Watching"
 msgstr ""
+
+msgctxt "#30857"
+msgid "Items per page"
+msgstr ""
+
+msgctxt "#30858"
+msgid "How many items a listing shows before the 'Next page' entry appears. Higher values need longer to load and more memory."
+msgstr ""
+
+msgctxt "#30859"
+msgid "Unlimited (show all at once)"
+msgstr ""
+
+msgctxt "#30860"
+msgid "Show a whole listing on one page, without splitting it up. Large libraries then need noticeably longer to open."
+msgstr ""

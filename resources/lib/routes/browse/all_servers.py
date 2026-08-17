@@ -14,9 +14,10 @@ from gui.builders.movie import create_movie_item
 from gui.builders.photo import create_photo_item
 from gui.builders.show import create_show_item
 from plex.network import Plex
-from processing.pagination import PAGE_SIZE
+from processing.pagination import UNLIMITED
 from processing.pagination import add_page_navigation
 from processing.pagination import page_number
+from processing.pagination import page_size
 
 LOG = Logger()
 
@@ -30,8 +31,9 @@ def run(context):
     content_type = None
     items = []
     total = 0
-    skip = (page_number(context) - 1) * PAGE_SIZE
-    remaining = PAGE_SIZE
+    page_limit = page_size()
+    skip = (page_number(context) - 1) * page_limit
+    remaining = page_limit
 
     LOG.debug('Using list of %s sections: %s' % (len(all_sections), all_sections))
 
@@ -46,7 +48,7 @@ def run(context):
                 context.plex_network.get_server_from_uuid(section.get_server_uuid()),
                 section.get_path(),
                 skip,
-                max(1, remaining)
+                max(1, remaining) if page_limit else UNLIMITED
             )
             total += section_total
 
@@ -55,7 +57,9 @@ def run(context):
                 continue
 
             skip = 0
-            if remaining:
+            if not page_limit:
+                items += section_items
+            elif remaining:
                 items += section_items[:remaining]
                 remaining -= min(remaining, len(section_items))
 
