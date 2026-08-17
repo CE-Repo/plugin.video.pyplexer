@@ -28,12 +28,14 @@ ON_DECK_MODES = (
 
 
 def create_gui_item(context, item):
-    LOG.debug('Adding %s\n'
-              'Info Labels: %s\n'
-              'Extra: %s' %
-              (item.info_labels.get('title', i18n('Unknown')),
-               json.dumps(item.info_labels, indent=4),
-               json.dumps(item.extra, indent=4)))
+    if LOG.debug_enabled():
+        # two json dumps per item, and a listing holds hundreds of them
+        LOG.debug('Adding %s\n'
+                  'Info Labels: %s\n'
+                  'Extra: %s' %
+                  (item.info_labels.get('title', i18n('Unknown')),
+                   json.dumps(item.info_labels, indent=4),
+                   json.dumps(item.extra, indent=4)))
 
     url = _get_url(item)
     LOG.debug('URL to use for listing: %s' % url)

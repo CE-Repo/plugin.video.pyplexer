@@ -819,7 +819,10 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
         tree = ETree.fromstring(data)
         LOG.debug('PARSE: it took %.2f seconds to parse data from %s' %
                   ((time.time() - start_time), self.get_address()))
-        LOG.debugplus('TREE: %s' % ETree.tostring(tree))
+        if LOG.debugplus_enabled():
+            # a library page is megabytes of xml; serialising it back for a
+            # line nobody asked for costs more than parsing it did
+            LOG.debugplus('TREE: %s' % ETree.tostring(tree))
         return tree
 
     def processed_xml(self, url):

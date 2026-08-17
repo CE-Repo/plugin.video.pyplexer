@@ -9,6 +9,7 @@ already identified and expect exactly one item back.  The second kind passes
 and gets a precise lookup instead of Plex' fuzzy full text search.
 """
 
+import threading
 import xml.etree.ElementTree as ETree
 from urllib.parse import quote
 
@@ -72,8 +73,14 @@ def run(context):
     succeeded = False
     search_results = search(context)
     LOG.debug('Search returned %s item(s)' % len(search_results))
-    log_results = list(map(lambda x: decode_utf8(ETree.tostring(x[1])), search_results))
-    LOG.debug('Found search results: %s' % '\n\n'.join(log_results))
+
+    if LOG.debug_enabled():
+        # Every entry carries the container it came from, so serialising
+        # entry[1] wrote the whole answer out once per hit - the search payload
+        # squared. The hit itself is what the line was after.
+        LOG.debug('Found search results: %s' %
+                  '\n\n'.join(decode_utf8(ETree.tostring(entry[2]))
+                              for entry in search_results))
 
     if search_results:
         LOG.debug('Found a server with the requested content %s' % params['query'])
@@ -145,30 +152,55 @@ def _with_streams(context, results):
 
 
 def _search_sections(context):
-    """Plex' full text search, one call per matching library section."""
-    results = []
+    """Plex' full text search, one call per matching library section.
 
+    The sections are asked at the same time: they are separate servers and
+    separate libraries answering separate questions, and waiting for each in
+    turn made the search take as long as all of them added together.
+    """
     content_type = _get_content_type(context.params.get('video_type'))
     search_type = _get_search_type(context.params.get('video_type'))
     if not content_type or not search_type:
         return []
 
-    server_list = context.plex_network.get_active_server_list()
-    params = context.params
+    query = context.params.get('query')
 
-    for server in server_list:
-        processed_xml = server.processed_xml
-
-        sections = server.get_sections()
-        for section in sections:
-
+    searches = []
+    for server in context.plex_network.get_active_server_list():
+        for section in server.get_sections():
             if section.get_type() == content_type:
-                query = params.get('query')
-                url = '%s/search?type=%s&query=%s' % (section.get_path(), search_type, query)
-                processed = processed_xml(url)
+                searches.append((server, '%s/search?type=%s&query=%s' %
+                                 (section.get_path(), search_type, query)))
 
-                if _is_not_none(processed):
-                    results += _get_search_results(server, processed)
+    if not searches:
+        return []
+
+    found = [[] for _ in searches]
+
+    def _search_one(index, server, url):
+        try:
+            processed = server.processed_xml(url)
+        except Exception as error:  # pylint: disable=broad-except
+            # one library that fails must not take the whole search with it
+            LOG.error('Search failed on %s: %s' % (server.get_name(), error))
+            return
+
+        if _is_not_none(processed):
+            found[index] = _get_search_results(server, processed)
+
+    threads = [threading.Thread(target=_search_one, args=(index, server, url))
+               for index, (server, url) in enumerate(searches)]
+
+    LOG.debug('Searching %s section(s) at once' % len(threads))
+
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    results = []
+    for entries in found:
+        results += entries
 
     return results
 

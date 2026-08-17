@@ -100,6 +100,18 @@ class Logger:
             return False
         return self.level >= level or level in (self.LOG_ERROR, self.LOG_NOTICE)
 
+    def debug_enabled(self):
+        """Whether a debug line would be printed.
+
+        ``__print_message`` drops a line it must not print, but the caller has
+        already built it by then.  Anything expensive to put into words - a
+        tree serialised back to xml, a dict dumped as json - has to ask first.
+        """
+        return self._enabled(self.LOG_DEBUG)
+
+    def debugplus_enabled(self):
+        return self._enabled(self.LOG_DEBUGPLUS)
+
     # _caller() -> __print_message() -> error()/notice()/debug()/__call__() -> caller
     CALLER_DEPTH = 3
 
