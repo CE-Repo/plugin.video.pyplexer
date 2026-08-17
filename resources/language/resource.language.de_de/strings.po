@@ -328,10 +328,6 @@ msgctxt "#30083"
 msgid "Refresh Data"
 msgstr "Daten aktualisieren"
 
-msgctxt "#30084"
-msgid "Channels"
-msgstr "Kanäle"
-
 msgctxt "#30085"
 msgid "Playlists"
 msgstr "Wiedergabelisten"
@@ -1196,10 +1192,6 @@ msgstr "Hauptmenü"
 msgctxt "#30715"
 msgid "Show [B]myPlex Queue[/B] menu"
 msgstr "Menüpunkt [B]myPlex Warteschlange[/B] anzeigen"
-
-msgctxt "#30716"
-msgid "Show [B]Channels[/B] menu"
-msgstr "Menüpunkt [B]Kanäle[/B] anzeigen"
 
 msgctxt "#30718"
 msgid "Show [B]Playlists[/B] menu"

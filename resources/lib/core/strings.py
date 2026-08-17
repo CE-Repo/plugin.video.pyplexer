@@ -70,7 +70,6 @@ STRINGS = {
     'Sign In': 30081,
     'Display Servers': 30082,
     'Refresh Data': 30083,
-    'Channels': 30084,
     'Playlists': 30085,
     'Transcoding': 30086,
     'All episodes': 30087,

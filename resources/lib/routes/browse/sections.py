@@ -224,19 +224,6 @@ def server_additional_menu_items(context, server_list, content_filter, menus):
         else:
             prefix = ''
 
-        if menus.get('channels'):
-            details = {
-                'title': prefix + i18n('Channels')
-            }
-            extra_data = {
-                'type': 'Folder',
-                'mode': MODES.CHANNELVIEW
-            }
-
-            item_url = server.join_url(server.get_url_location(), 'channels/all')
-            gui_item = GUIItem(item_url, details, extra_data)
-            append_item(create_gui_item(context, gui_item))
-
         if menus.get('widgets'):
             # create Widgets link
             details = {

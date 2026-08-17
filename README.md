@@ -68,7 +68,6 @@ in to myPlex.
 | Playlists | Playlists stored on a server | Signed in to myPlex |
 | PyPlexer Playlist | Builds a playlist from criteria you pick | Signed in to myPlex |
 | myPlex Queue | Your myPlex watch later queue | Signed in to myPlex |
-| Channels | Plex channels installed on a server | Always |
 | Widgets | Paths intended for skin home-screen widgets | Always |
 | Switch User | Change Plex Home user | Plex Home is enabled |
 | Sign In / Sign Out | myPlex account | Always |
@@ -76,8 +75,8 @@ in to myPlex.
 | Manage Servers | Status, master server, certificate verification, custom access urls | Always |
 | Clear Caches | Drops everything PyPlexer has cached | Caching is enabled |
 
-Channels, Widgets and Playlists are per-server entries. By default
-they only carry the server's name when more than one server is present; set
+Widgets and Playlists are per-server entries. By default they only carry
+the server's name when more than one server is present; set
 **Server name prefix on the main menu** to `Always` to label them regardless.
 
 **Playback** — Direct play from local, SMB or AFP paths when the file is

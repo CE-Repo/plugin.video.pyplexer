@@ -280,11 +280,6 @@ def run(start_time):  # pylint: disable=too-many-locals, too-many-statements, to
                                context.params.get('indirect'))
         return _finished(start_time)
 
-    if mode == MODES.CHANNELVIEW:
-        from routes.channels import browse
-        browse.run(context, url)
-        return _finished(start_time)
-
     if mode == MODES.PLAYLIBRARY_TRANSCODE:
         from routes.play import library_media
         library_media.run(context, {

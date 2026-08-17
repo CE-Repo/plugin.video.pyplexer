@@ -329,10 +329,6 @@ msgctxt "#30083"
 msgid "Refresh Data"
 msgstr ""
 
-msgctxt "#30084"
-msgid "Channels"
-msgstr ""
-
 msgctxt "#30085"
 msgid "Playlists"
 msgstr ""
@@ -1201,10 +1197,6 @@ msgstr ""
 
 msgctxt "#30715"
 msgid "Show [B]myPlex Queue[/B] menu"
-msgstr ""
-
-msgctxt "#30716"
-msgid "Show [B]Channels[/B] menu"
 msgstr ""
 
 msgctxt "#30718"
