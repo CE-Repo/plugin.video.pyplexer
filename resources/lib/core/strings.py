@@ -231,6 +231,10 @@ STRINGS = {
     'Removed from Continue Watching': 30855,
     'Could not remove from Continue Watching': 30856,
     'Live TV': 30861,
+    'Select server': 30866,
+    'All servers': 30867,
+    'No libraries found': 30869,
+    'Not a valid url': 30870,
     'No Live TV channels found': 30863,
     'Could not start the channel': 30864,
 }

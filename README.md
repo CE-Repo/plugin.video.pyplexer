@@ -73,6 +73,7 @@ in to myPlex.
 | Switch User | Change Plex Home user | Plex Home is enabled |
 | Sign In / Sign Out | myPlex account | Always |
 | Detect Servers | Re-runs discovery | Always |
+| Select server | Browse one server instead of all of them | More than one server |
 | Manage Servers | Status, master server, certificate verification, custom access urls | Always |
 | Clear Caches | Drops everything PyPlexer has cached | Caching is enabled |
 

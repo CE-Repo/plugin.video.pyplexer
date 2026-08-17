@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import xbmcgui  # pylint: disable=import-error
 import xbmcplugin  # pylint: disable=import-error
 
 from core.common import get_handle
@@ -14,13 +15,18 @@ from plex.network import Plex
 from processing.pagination import paginate_local_items
 
 LOG = Logger()
+WINDOW = xbmcgui.Window(10000)
+
+#: Holds the server a rediscovery was already spent on, so an unreachable one
+#: is retried once per session instead of before every listing.
+RETRY_PROPERTY = 'plugin.video.pyplexer-offline-retry'
 
 
 def run(context, content_filter=None, display_shared=False):
     context.plex_network = Plex(context.settings, load=True)
     xbmcplugin.setContent(get_handle(), 'files')
 
-    server_list = context.plex_network.get_server_list()
+    server_list = context.plex_network.get_active_server_list()
     LOG.debug('Using list of %s servers: %s' % (len(server_list), server_list))
 
     items = []
@@ -33,6 +39,8 @@ def run(context, content_filter=None, display_shared=False):
 
     if server_section_menus:
         items += combined_sections_item(context)
+    else:
+        _report_empty_server(context, server_list)
 
     items += server_section_menus
 
@@ -117,6 +125,70 @@ def pyplexer_playlist_item(context):
     }
 
     item_url = 'cmd:' + COMMANDS.MANAGE_PLAYLIST
+    gui_item = GUIItem(item_url, details, extra_data)
+    return [create_gui_item(context, gui_item)]
+
+
+def _report_empty_server(context, server_list):
+    """Say why a chosen server shows nothing, rather than showing nothing.
+
+    An empty menu after a switch is indistinguishable from a broken add-on, so
+    the reason goes to the log per server and the notification tells the user
+    the switch itself worked.
+    """
+    chosen = context.plex_network.active_server_name()
+    if not chosen:
+        return
+
+    offline = False
+    for server in server_list:
+        offline = offline or server.is_offline()
+        LOG.debug('%s: offline=%s, secondary=%s, %s section(s): %s' %
+                  (server.get_name(), server.is_offline(), server.is_secondary(),
+                   len(server.get_sections()),
+                   [section.get_title() for section in server.get_sections()]))
+
+    reason = i18n('No libraries found')
+    if offline:
+        reason = i18n('Offline')
+        chosen_uuid = context.settings.active_server()
+
+        # The server list is cached without an expiry, and a server marked
+        # offline is never asked again - its requests answer from the flag
+        # alone.  Picking it is reason enough for one rediscovery, but only
+        # one: a server that stays away would otherwise have every second
+        # listing pay for a full discovery.
+        if WINDOW.getProperty(RETRY_PROPERTY) != chosen_uuid:
+            WINDOW.setProperty(RETRY_PROPERTY, chosen_uuid)
+            WINDOW.setProperty('plugin.video.pyplexer-refresh.servers', 'true')
+            LOG.debug('Chosen server is flagged offline, armed a rediscovery')
+        else:
+            LOG.debug('Chosen server is still offline after a rediscovery')
+
+    xbmcgui.Dialog().notification(heading=CONFIG['name'],
+                                  message='%s: %s' % (chosen, reason),
+                                  icon=CONFIG['icon'])
+
+
+def select_server_item(context):
+    """The switch between one server and all of them; pointless with one."""
+    if len(context.plex_network.get_server_list()) < 2:
+        return []
+
+    title = i18n('Select server')
+    chosen = context.plex_network.active_server_name()
+    if chosen:
+        # so the menu says which server the listing above belongs to
+        title = '%s (%s)' % (title, chosen)
+
+    details = {
+        'title': title
+    }
+    extra_data = {
+        'type': 'file'
+    }
+
+    item_url = 'cmd:' + COMMANDS.SELECTSERVER
     gui_item = GUIItem(item_url, details, extra_data)
     return [create_gui_item(context, gui_item)]
 
@@ -291,6 +363,8 @@ def action_menu_items(context):
         item_url = 'cmd:' + COMMANDS.DETECTSERVERS
         gui_item = GUIItem(item_url, details, extra_data)
         append_item(create_gui_item(context, gui_item))
+
+        items += select_server_item(context)
 
         details = {
             'title': i18n('Manage Servers')

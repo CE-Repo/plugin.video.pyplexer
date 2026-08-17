@@ -318,6 +318,43 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
     def get_server_list(self):
         return self.server_list.values()
 
+    def get_active_server_list(self):
+        """The servers to browse: the chosen one, or all when none is chosen.
+
+        A server that was picked and has since gone away must not leave the
+        add-on with an empty menu, so an unknown choice falls back to all.
+        """
+        chosen = self.settings.active_server()
+        if not chosen:
+            return self.get_server_list()
+
+        servers = [server for server in self.get_server_list()
+                   if server.get_uuid() == chosen]
+        if servers:
+            return servers
+
+        LOG.debug('Chosen server %s is not among the known ones, showing all' % chosen)
+        return self.get_server_list()
+
+    def active_sections(self):
+        """``all_sections`` limited to the server being browsed."""
+        sections = self.all_sections()
+
+        chosen = self.settings.active_server()
+        if not chosen:
+            return sections
+
+        return [section for section in sections
+                if section.get_server_uuid() == chosen] or sections
+
+    def active_server_name(self):
+        """The name of the chosen server, empty while browsing all of them."""
+        chosen = self.settings.active_server()
+        for server in self.get_server_list():
+            if server.get_uuid() == chosen:
+                return server.get_name()
+        return ''
+
     def talk_direct_to_server(self, ip_address='localhost', port=DEFAULT_PORT, url=None):
         uri = 'http://%s%s' % (format_netloc(ip_address, port), url or '')
         try:
@@ -806,6 +843,11 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
     def merge_server(self, server):
         LOG.debug('merging server with uuid %s' % server.get_uuid())
 
+        # Only the plex.tv discovery attached these; a server found over the
+        # network or entered by hand never saw its own access urls, so the one
+        # address that would have reached it was left untested.
+        server.add_custom_access_urls(self.server_configs.access_urls(server.get_uuid()))
+
         try:
             existing = self.get_server_from_uuid(server.get_uuid())
         except Exception:  # pylint: disable=broad-except
@@ -818,6 +860,8 @@ class Plex:  # pylint: disable=too-many-public-methods, too-many-instance-attrib
             LOG.debug('Found existing server %s %s' %
                       (existing.get_name(), existing.get_uuid()))
 
+            existing.add_custom_access_urls(
+                self.server_configs.access_urls(existing.get_uuid()))
             existing.set_best_address(server.get_access_address())
             existing.refresh()
             self.server_list[existing.get_uuid()] = existing

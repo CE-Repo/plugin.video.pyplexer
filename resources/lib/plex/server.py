@@ -53,6 +53,9 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
         self.external_address = None
         self.external_address_uri = None
         self.local_address_uri = []
+        # every external route plex.tv listed, not just the last one
+        self.external_addresses = []
+        self.external_address_uris = []
 
         if self.discovery == 'myplex':
             self.external_address = format_netloc(address, port)
@@ -278,8 +281,17 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
         self.plex_home_enabled = False
 
     def add_external_connection(self, address, port, uri):
-        self.external_address = format_netloc(address, port)
+        address = format_netloc(address, port)
+        self.external_address = address
         self.external_address_uri = uri
+
+        # plex.tv lists a remote server under more than one external route -
+        # the direct one and the relay it hands out when the direct one cannot
+        # be reached. Keeping only the last of them left a server that answers
+        # on another route untested, and therefore marked offline.
+        if address and address not in self.external_addresses:
+            self.external_addresses.append(address)
+            self.external_address_uris.append(uri)
 
     def add_internal_connection(self, address, port, uri):
         address = format_netloc(address, port)
@@ -380,6 +392,12 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
                 http_uris.append('%s://%s/' % ('http', external_address))
                 http_tags.append('external')
 
+            for extra in self._extra_external_netlocs(external_uri, external_address):
+                https_uris.append('%s://%s/' % ('https', extra))
+                https_tags.append('external_uri')
+                http_uris.append('%s://%s/' % ('http', extra))
+                http_tags.append('external_uri')
+
         for url in self.custom_access_urls:
             if not url.startswith('http'):
                 https_uris.append('%s://%s/' % ('https', url.rstrip('/')))
@@ -395,6 +413,28 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
             http_tags.append('user')
 
         return (https_uris, https_tags), (http_uris, http_tags)
+
+    def _extra_external_netlocs(self, external_uri, external_address):
+        """The external routes plex.tv listed besides the one that was kept."""
+        known = {netloc for netloc in (external_uri, external_address) if netloc}
+        extras = []
+
+        # a server cached before this list existed simply has no extra routes
+        for uri in getattr(self, 'external_address_uris', []):
+            if not uri:
+                continue
+
+            netloc = urlparse(uri).netloc if uri.startswith('http') else uri
+            if not netloc:
+                continue
+
+            netloc = ensure_netloc(netloc, DEFAULT_PORT)
+            if netloc in known or netloc in extras:
+                continue
+
+            extras.append(netloc)
+
+        return extras
 
     def _set_best_https(self):
         if any(conn[0] == 'user' and conn[1] == 'https' and conn[5]
@@ -797,9 +837,20 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
                 url = '%s?%s' % (url, url_parts.query)
         data = self.talk(url)
         tree = self.process_xml(data)
-        if tree is not None:
+        if tree is not None and not self._is_error(tree):
             DATA_CACHE.write_cache(cache_name, tree)
         return tree
+
+    @staticmethod
+    def _is_error(tree):
+        """Whether a tree is one of the messages ``talk`` answers with.
+
+        An offline, unauthorized or failed request must never be cached: the
+        answer says nothing about the library, and keeping it would go on
+        reporting an empty server for the whole cache lifetime, long after it
+        came back.
+        """
+        return tree.tag == 'message'
 
     def raw_xml(self, url):
         if url.startswith('http'):

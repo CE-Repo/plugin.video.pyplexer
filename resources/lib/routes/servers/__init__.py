@@ -3,5 +3,6 @@
 __all__ = [
     'detect',
     'manage',
+    'select',
     'set_master',
 ]

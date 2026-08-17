@@ -3,6 +3,7 @@
 import json
 from copy import deepcopy
 from urllib.parse import urlparse
+from urllib.parse import urlunparse
 
 import xbmc  # pylint: disable=import-error
 import xbmcgui  # pylint: disable=import-error
@@ -188,10 +189,20 @@ class ServerManager:
             url = keyboard.getText()
             url = url.strip()
 
-        if self._validate_url(url):
-            self.server_configs.add_access_url(self.server.get_uuid(), url, url_index)
-            self._refresh(clear_cache=True)
-            WINDOW.setProperty('plugin.video.pyplexer-refresh.servers', 'true')
+        if not url:
+            return
+
+        url = self._normalise_url(url)
+        if not url:
+            # silently dropping the input left the user with a url that never
+            # showed up anywhere and no idea why
+            self._dialog.ok(heading, '%s\n%s' % (i18n('Not a valid url'),
+                                                 'http://192.168.0.10:32400/'))
+            return
+
+        self.server_configs.add_access_url(self.server.get_uuid(), url, url_index)
+        self._refresh(clear_cache=True)
+        WINDOW.setProperty('plugin.video.pyplexer-refresh.servers', 'true')
 
     def _modify_custom_access_url(self, url_index):
         choice = self._dialog.yesno(
@@ -218,12 +229,26 @@ class ServerManager:
         self._dialog.select(i18n('Connection Test Results'), addresses)
 
     @staticmethod
-    def _validate_url(url):
+    def _normalise_url(url):
+        """Return the url the connection test can use, or empty when unusable.
+
+        A server is typed in as ``http://host:32400``, which has no path at
+        all - demanding one rejected exactly the input everybody enters.  The
+        path the requests are built on top of is filled in instead.
+        """
         try:
             result = urlparse(url)
-            return all([result.scheme, result.netloc, result.path])
         except Exception:  # pylint: disable=broad-except
-            return False
+            return ''
+
+        if not result.scheme or not result.netloc:
+            return ''
+
+        if result.scheme not in ('http', 'https'):
+            return ''
+
+        return urlunparse((result.scheme, result.netloc, result.path or '/',
+                           '', '', ''))
 
     @staticmethod
     def _refresh(clear_cache=False):

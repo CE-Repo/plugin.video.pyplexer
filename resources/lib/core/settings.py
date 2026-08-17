@@ -133,6 +133,13 @@ class AddonSettings:  # pylint: disable=too-many-public-methods
                  value, xbmc.LOGDEBUG)
         self.settings.setSetting('masterServer', '%s' % value)
 
+    def active_server(self):
+        """The uuid of the server being browsed; empty means all of them."""
+        return self._get_setting('active_server', fresh=True) or ''
+
+    def set_active_server(self, value):
+        self._set_setting('active_server', value or '')
+
     def prefix_server(self):
         return self._get_setting('prefix_server') == '1'
 

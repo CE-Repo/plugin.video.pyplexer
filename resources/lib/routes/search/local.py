@@ -153,7 +153,7 @@ def _search_sections(context):
     if not content_type or not search_type:
         return []
 
-    server_list = context.plex_network.get_server_list()
+    server_list = context.plex_network.get_active_server_list()
     params = context.params
 
     for server in server_list:

@@ -26,7 +26,7 @@ def run(context):
     context.plex_network = Plex(context.settings, load=True)
 
     section_type = get_section_type(context)
-    all_sections = context.plex_network.all_sections()
+    all_sections = context.plex_network.active_sections()
 
     content_type = None
     items = []

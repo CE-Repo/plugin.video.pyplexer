@@ -83,6 +83,11 @@ def run(start_time):  # pylint: disable=too-many-locals, too-many-statements, to
         manage.run(context)
         return _finished(start_time)
 
+    if command == COMMANDS.SELECTSERVER:
+        from routes.servers import select
+        select.run(context)
+        return _finished(start_time)
+
     if command == COMMANDS.DETECTSERVERS:
         from routes.servers import detect
         detect.run(context)

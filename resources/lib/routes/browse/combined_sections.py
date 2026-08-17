@@ -18,7 +18,7 @@ def run(context):
     context.plex_network = Plex(context.settings, load=True)
     xbmcplugin.setContent(get_handle(), 'files')
 
-    server_list = context.plex_network.get_server_list()
+    server_list = context.plex_network.get_active_server_list()
     LOG.debug('Using list of %s servers: %s' % (len(server_list), server_list))
 
     items = get_menu_items(context)

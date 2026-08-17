@@ -36,7 +36,7 @@ def run(context):
         xbmcplugin.endOfDirectory(get_handle(), succeeded=False, cacheToDisc=False)
         return
 
-    all_sections = context.plex_network.all_sections()
+    all_sections = context.plex_network.active_sections()
     LOG.debug('Using list of %s sections: %s' % (len(all_sections), all_sections))
 
     items, total = search(context, all_sections)

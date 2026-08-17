@@ -21,7 +21,7 @@ def run(context):
     xbmcplugin.setContent(get_handle(), 'files')
 
     channels = []
-    for server in context.plex_network.get_server_list():
+    for server in context.plex_network.get_active_server_list():
         if server.is_offline() or server.is_secondary():
             continue
         channels += dvr_channels(server)

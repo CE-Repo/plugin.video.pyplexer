@@ -89,6 +89,32 @@
                         <close>true</close>
                     </control>
                 </setting>
+                <setting id="selectServer" type="action" label="30866" help="30868">
+                    <level>0</level>
+                    <data>RunScript(plugin.video.pyplexer, select_server)</data>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+                <setting id="active_server" type="string" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition on="property" name="InfoBool">false</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="edit" format="string">
+                        <heading/>
+                        <hidden>true</hidden>
+                    </control>
+                </setting>
                 <setting id="selectMaster" type="action" label="30526" help="">
                     <level>0</level>
                     <data>RunScript(plugin.video.pyplexer, master)</data>

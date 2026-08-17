@@ -1765,6 +1765,26 @@ msgctxt "#30865"
 msgid "Lists the channels of a tuner attached to a server, plus the free channels Plex serves itself once you are signed in to myPlex."
 msgstr "Zeigt die Sender eines am Server angeschlossenen Tuners sowie die Gratis-Sender von Plex, sobald du bei myPlex angemeldet bist."
 
+msgctxt "#30866"
+msgid "Select server"
+msgstr "Server wählen"
+
+msgctxt "#30867"
+msgid "All servers"
+msgstr "Alle Server"
+
+msgctxt "#30868"
+msgid "Browse a single server instead of all of them at once. Affects libraries, combined sections, On Deck, Recently Added, search and Live TV."
+msgstr "Nur einen Server durchsuchen statt aller gleichzeitig. Betrifft Bibliotheken, kombinierte Bereiche, „Aktuell“, „Zuletzt hinzugefügt“, Suche und Live-TV."
+
+msgctxt "#30869"
+msgid "No libraries found"
+msgstr "Keine Bibliotheken gefunden"
+
+msgctxt "#30870"
+msgid "Not a valid url"
+msgstr "Keine gültige URL"
+
 #~ msgctxt "#30689"
 #~ msgid "Up Next requires Kodi 18 or higher"
 #~ msgstr "‚Up Next‘ benötigt Kodi 18 oder höher"

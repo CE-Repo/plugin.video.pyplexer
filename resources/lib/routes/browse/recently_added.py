@@ -18,7 +18,7 @@ LOG = Logger()
 def run(context):
     context.plex_network = Plex(context.settings, load=True)
     content_type = context.params.get('content_type')
-    server_list = context.plex_network.get_server_list()
+    server_list = context.plex_network.get_active_server_list()
 
     items = []
     LOG.debug('Using list of %s servers: %s' % (len(server_list), server_list))

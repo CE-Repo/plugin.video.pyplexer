@@ -25,6 +25,7 @@ COMMANDS = __enum(
     MANAGESERVERS='manageservers',
     MANAGEMYPLEX='managemyplex',
     MASTER='master',
+    SELECTSERVER='select_server',
     REFRESH='refresh',
     SIGNIN='signin',
     SIGNOUT='signout',
@@ -140,8 +141,10 @@ CONFIG = {
     'version': __ADDON.getAddonInfo('version'),
     'media_path': 'special://home/addons/%s/resources/media/' % __ADDON.getAddonInfo('id'),
     'temp_path': xbmcvfs.translatePath('special://temp/%s/' % __ADDON.getAddonInfo('id')),
-    # Address serialization now normalizes IPv6 network locations.
-    'required_revision': '1.0.8'
+    # Servers now keep every external route plex.tv lists, not just the last;
+    # cached servers predate that and carry stale offline flags, so they have
+    # to be discovered again.
+    'required_revision': '1.0.9'
 }
 
 try:
