@@ -237,19 +237,6 @@ def server_additional_menu_items(context, server_list, content_filter, menus):
             gui_item = GUIItem(item_url, details, extra_data)
             append_item(create_gui_item(context, gui_item))
 
-        if menus.get('online'):
-            # Create plexonline link
-            details = {
-                'title': prefix + i18n('Plex Online')
-            }
-            extra_data = {
-                'type': 'Folder',
-                'mode': MODES.PLEXONLINE
-            }
-            item_url = server.join_url(server.get_url_location(), 'system/plexonline')
-            gui_item = GUIItem(item_url, details, extra_data)
-            append_item(create_gui_item(context, gui_item))
-
         if menus.get('widgets'):
             # create Widgets link
             details = {

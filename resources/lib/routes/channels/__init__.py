@@ -2,9 +2,6 @@
 
 __all__ = [
     'browse',
-    'install',
-    'online',
-    'online_listing',
     'plugin_listing',
     'search',
     'settings',

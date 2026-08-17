@@ -23,18 +23,6 @@ msgctxt "#30001"
 msgid "Delete this item? This action will delete media and associated data files."
 msgstr ""
 
-msgctxt "#30002"
-msgid "Plex Online"
-msgstr ""
-
-msgctxt "#30003"
-msgid "About to install"
-msgstr ""
-
-msgctxt "#30004"
-msgid "This plugin is already installed"
-msgstr ""
-
 msgctxt "#30005"
 msgid "Switch Failed"
 msgstr ""
@@ -1015,10 +1003,6 @@ msgctxt "#30663"
 msgid "Server detection notification"
 msgstr ""
 
-msgctxt "#30664"
-msgid "installed"
-msgstr ""
-
 msgctxt "#30665"
 msgid "Movies"
 msgstr ""
@@ -1221,10 +1205,6 @@ msgstr ""
 
 msgctxt "#30716"
 msgid "Show [B]Channels[/B] menu"
-msgstr ""
-
-msgctxt "#30717"
-msgid "Show [B]Plex Online[/B] menu"
 msgstr ""
 
 msgctxt "#30718"

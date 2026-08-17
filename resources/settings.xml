@@ -846,11 +846,6 @@
                     <default>true</default>
                     <control type="toggle"/>
                 </setting>
-                <setting id="show_plex_online_menu" type="boolean" label="30717" help="">
-                    <level>0</level>
-                    <default>true</default>
-                    <control type="toggle"/>
-                </setting>
                 <setting id="show_playlists_menu" type="boolean" label="30718" help="">
                     <level>0</level>
                     <default>true</default>

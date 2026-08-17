@@ -10,7 +10,6 @@ __all__ = [
     'music',
     'photo',
     'playlist',
-    'plex_online',
     'plex_plugin',
     'season',
     'show',

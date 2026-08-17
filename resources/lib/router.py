@@ -280,16 +280,6 @@ def run(start_time):  # pylint: disable=too-many-locals, too-many-statements, to
                                context.params.get('indirect'))
         return _finished(start_time)
 
-    if mode == MODES.PLEXONLINE:
-        from routes.channels import online
-        online.run(context, url)
-        return _finished(start_time)
-
-    if mode == MODES.CHANNELINSTALL:
-        from routes.channels import install
-        install.run(context, url, context.params.get('name', ''))
-        return _finished(start_time)
-
     if mode == MODES.CHANNELVIEW:
         from routes.channels import browse
         browse.run(context, url)

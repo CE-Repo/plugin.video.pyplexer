@@ -167,7 +167,6 @@ class AddonSettings:  # pylint: disable=too-many-public-methods
         return {
             'queue': self._get_setting('show_myplex_queue_menu'),
             'channels': self._get_setting('show_channels_menu'),
-            'online': self._get_setting('show_plex_online_menu'),
             'playlists': self._get_setting('show_playlists_menu'),
             'widgets': self._get_setting('show_widget_menu'),
             'pyplexer_playlist': self._get_setting('show_pyplexer_playlist_menu'),

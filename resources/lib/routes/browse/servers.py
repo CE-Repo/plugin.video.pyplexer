@@ -10,7 +10,6 @@ from gui.list_item import create_gui_item
 from plex.network import Plex
 from processing.music import process_music
 from processing.photos import process_photos
-from processing.plex_online import process_plex_online
 from processing.plex_plugins import process_plex_plugins
 from processing.pagination import paginate_local_items
 
@@ -43,13 +42,6 @@ def run(context, url):
             url = media_server.join_url(media_server.get_url_location(), 'video')
             if servers_list == 1:
                 process_plex_plugins(context, url)
-                return
-
-        elif content_type == 'online':
-            extra_data['mode'] = MODES.PLEXONLINE
-            url = media_server.join_url(media_server.get_url_location(), 'system/plexonline')
-            if servers_list == 1:
-                process_plex_online(context, url)
                 return
 
         elif content_type == 'music':

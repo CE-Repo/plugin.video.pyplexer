@@ -17,9 +17,6 @@ STRINGS = {
     # add-on
     'Confirm file delete?': 30000,
     'Delete this item? This action will delete media and associated data files.': 30001,
-    'Plex Online': 30002,
-    'About to install': 30003,
-    'This plugin is already installed': 30004,
     'Switch Failed': 30005,
     'Sign Out': 30006,
     'To sign out you must be logged in as an admin user. Switch user and try again': 30007,
@@ -124,7 +121,6 @@ STRINGS = {
     'Finished': 30656,
     'Found servers:': 30657,
     'No servers found': 30658,
-    'installed': 30664,
     'Movies': 30665,
     'Music': 30666,
     'TV Shows': 30667,
