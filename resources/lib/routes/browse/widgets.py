@@ -75,6 +75,19 @@ def movie_widgets(context, server, section):
     gui_item = GUIItem(section.get_path(), details, extra_data)
     append_item(create_gui_item(context, gui_item))
 
+    details = {
+        'title': '%s: %s' % (section.get_title(), i18n('Random'))
+    }
+    extra_data = {
+        'type': 'Folder',
+        'mode': MODES.MOVIES_RANDOM,
+        'parameters': {
+            'server_uuid': server.get_uuid()
+        }
+    }
+    gui_item = GUIItem(section.get_path(), details, extra_data)
+    append_item(create_gui_item(context, gui_item))
+
     return items
 
 
@@ -111,6 +124,32 @@ def tvshow_widgets(context, server, section):
     }
     extra_data = {
         'mode': MODES.TXT_TVSHOWS_RECENT_AIRED,
+        'parameters': {
+            'server_uuid': server.get_uuid()
+        }
+    }
+    gui_item = GUIItem(section.get_path(), details, extra_data)
+    append_item(create_gui_item(context, gui_item))
+
+    details = {
+        'title': '%s: %s' % (section.get_title(), i18n('Recently Added Shows'))
+    }
+    extra_data = {
+        'type': 'Folder',
+        'mode': MODES.SHOWS_RECENTLY_ADDED,
+        'parameters': {
+            'server_uuid': server.get_uuid()
+        }
+    }
+    gui_item = GUIItem(section.get_path(), details, extra_data)
+    append_item(create_gui_item(context, gui_item))
+
+    details = {
+        'title': '%s: %s' % (section.get_title(), i18n('Random'))
+    }
+    extra_data = {
+        'type': 'Folder',
+        'mode': MODES.TVSHOWS_RANDOM,
         'parameters': {
             'server_uuid': server.get_uuid()
         }
@@ -167,6 +206,39 @@ def all_server_widgets(context):
     }
 
     gui_item = GUIItem('/library/recentlyAdded', details, extra_data)
+    append_item(create_gui_item(context, gui_item))
+
+    details = {
+        'title': i18n('All Servers: Recently Added Shows')
+    }
+    extra_data = {
+        'type': 'Folder',
+        'mode': MODES.SHOWS_RECENTLY_ADDED
+    }
+
+    gui_item = GUIItem('/library/recentlyAdded', details, extra_data)
+    append_item(create_gui_item(context, gui_item))
+
+    details = {
+        'title': i18n('All Servers: Random Movies')
+    }
+    extra_data = {
+        'type': 'Folder',
+        'mode': MODES.MOVIES_RANDOM
+    }
+
+    gui_item = GUIItem('/library/random_movies', details, extra_data)
+    append_item(create_gui_item(context, gui_item))
+
+    details = {
+        'title': i18n('All Servers: Random Shows')
+    }
+    extra_data = {
+        'type': 'Folder',
+        'mode': MODES.TVSHOWS_RANDOM
+    }
+
+    gui_item = GUIItem('/library/random_shows', details, extra_data)
     append_item(create_gui_item(context, gui_item))
 
     return items

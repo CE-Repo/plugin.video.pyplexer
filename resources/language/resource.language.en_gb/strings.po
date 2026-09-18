@@ -1790,3 +1790,39 @@ msgstr ""
 msgctxt "#30870"
 msgid "Not a valid url"
 msgstr ""
+
+msgctxt "#30871"
+msgid "Recently Added Shows"
+msgstr ""
+
+msgctxt "#30872"
+msgid "Random Movies"
+msgstr ""
+
+msgctxt "#30873"
+msgid "Random Shows"
+msgstr ""
+
+msgctxt "#30874"
+msgid "Random titles (per server section)"
+msgstr ""
+
+msgctxt "#30875"
+msgid "How many random titles each library section contributes to the Random Movies and Random Shows listings."
+msgstr ""
+
+msgctxt "#30876"
+msgid "All Servers: Recently Added Shows"
+msgstr ""
+
+msgctxt "#30877"
+msgid "All Servers: Random Movies"
+msgstr ""
+
+msgctxt "#30878"
+msgid "All Servers: Random Shows"
+msgstr ""
+
+msgctxt "#30879"
+msgid "Random"
+msgstr ""

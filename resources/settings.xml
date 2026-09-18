@@ -857,6 +857,18 @@
                     <default>false</default>
                     <control type="toggle"/>
                 </setting>
+                <setting id="random_items_per_section" type="integer" label="30874" help="30875">
+                    <level>0</level>
+                    <default>25</default>
+                    <constraints>
+                        <minimum>5</minimum>
+                        <step>5</step>
+                        <maximum>100</maximum>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                </setting>
                 <setting id="show_pyplexer_playlist_menu" type="boolean" label="30788" help="">
                     <level>0</level>
                     <default>true</default>

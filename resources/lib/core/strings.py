@@ -237,6 +237,13 @@ STRINGS = {
     'Not a valid url': 30870,
     'No Live TV channels found': 30863,
     'Could not start the channel': 30864,
+    'Recently Added Shows': 30871,
+    'Random Movies': 30872,
+    'Random Shows': 30873,
+    'All Servers: Recently Added Shows': 30876,
+    'All Servers: Random Movies': 30877,
+    'All Servers: Random Shows': 30878,
+    'Random': 30879,
 }
 
 
