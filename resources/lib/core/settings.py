@@ -158,6 +158,9 @@ class AddonSettings:  # pylint: disable=too-many-public-methods
     def recently_added_include_watched(self):
         return self._get_setting('ra_sections_include_watched')
 
+    def random_item_count(self):
+        return int(self._get_setting('random_items_per_section'))
+
     def flatten_seasons(self):
         return self._get_setting('flatten')
 

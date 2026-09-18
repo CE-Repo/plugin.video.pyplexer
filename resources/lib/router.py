@@ -421,6 +421,16 @@ def run(start_time):  # pylint: disable=too-many-locals, too-many-statements, to
         recently_added.run(context)
         return _finished(start_time)
 
+    if mode == MODES.SHOWS_RECENTLY_ADDED:
+        from routes.browse import recently_added_shows
+        recently_added_shows.run(context)
+        return _finished(start_time)
+
+    if mode in [MODES.MOVIES_RANDOM, MODES.TVSHOWS_RANDOM]:
+        from routes.browse import random_items
+        random_items.run(context)
+        return _finished(start_time)
+
     if MODES.MOVIES_ALL <= mode <= MODES.PHOTOS_ALL:
         from routes.browse import all_servers
         all_servers.run(context)

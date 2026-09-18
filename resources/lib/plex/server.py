@@ -757,6 +757,40 @@ class PlexMediaServer:  # pylint: disable=too-many-public-methods, too-many-inst
         url = '?'.join(['/library/sections/%s/all' % section, urlencode(arguments)])
         return self.processed_xml(self._update_path(url))
 
+    def get_random(self, section=-1, start=0, size=0, item_type=None):
+        """A random sample of a section, asked for straight from the server.
+
+        Plex sorts the section for us, but a listing that has to differ on
+        every visit cannot answer from the data cache the other library calls
+        share, so this one talks to the server itself.  A server that does not
+        know the sort answers with an error tree; the caller falls back to a
+        plain listing then, which is why the window starts at a caller-chosen
+        offset rather than at the beginning.
+        """
+        if section < 0:
+            return None
+
+        arguments = {
+            'sort': 'random',
+        }
+
+        if size > 0:
+            arguments.update({
+                'X-Plex-Container-Start': start,
+                'X-Plex-Container-Size': size,
+            })
+
+        if item_type is not None:
+            arguments.update({
+                'type': str(item_type)
+            })
+
+        url = '?'.join(['/library/sections/%s/all' % section, urlencode(arguments)])
+        tree = self.process_xml(self.talk(self._update_path(url)))
+        if tree is None or self._is_error(tree):
+            return None
+        return tree
+
     def get_search(self, query, item_type, section=-1, start=0, size=0):
         if section < 0:
             return None

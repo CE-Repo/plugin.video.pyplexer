@@ -79,6 +79,17 @@ def get_menu_items(context):
     items.append(create_gui_item(context, gui_item))
 
     details = {
+        'title': i18n('Recently Added Shows')
+    }
+    extra_data = {
+        'type': 'Folder',
+        'mode': MODES.SHOWS_RECENTLY_ADDED
+    }
+
+    gui_item = GUIItem('/library/recentlyAdded', details, extra_data)
+    items.append(create_gui_item(context, gui_item))
+
+    details = {
         'title': i18n('Recently Added Movies')
     }
     extra_data = {
@@ -131,6 +142,28 @@ def get_menu_items(context):
     }
 
     gui_item = GUIItem('/library/all_photos', details, extra_data)
+    items.append(create_gui_item(context, gui_item))
+
+    details = {
+        'title': i18n('Random Movies')
+    }
+    extra_data = {
+        'type': 'Folder',
+        'mode': MODES.MOVIES_RANDOM
+    }
+
+    gui_item = GUIItem('/library/random_movies', details, extra_data)
+    items.append(create_gui_item(context, gui_item))
+
+    details = {
+        'title': i18n('Random Shows')
+    }
+    extra_data = {
+        'type': 'Folder',
+        'mode': MODES.TVSHOWS_RANDOM
+    }
+
+    gui_item = GUIItem('/library/random_shows', details, extra_data)
     items.append(create_gui_item(context, gui_item))
 
     details = {

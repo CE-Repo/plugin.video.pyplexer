@@ -58,6 +58,16 @@ menu. *Combined Sections* merges the same content type across all of them into
 one listing, and the all-servers rows (Recently Added, On Deck, search) span
 every server at once.
 
+**Recently Added Shows** — Next to the row of recently added episodes,
+*Combined Sections* carries one that lists the shows those episodes belong to,
+the way Plex' own Recently Added does: a season that lands in one go takes a
+single row with its unwatched count instead of ten episodes.
+
+**Random Movies and Random Shows** — A fresh sample of titles from the movie
+and show libraries, drawn again on every visit. *Settings → Look and Feel*
+sets how many titles each library contributes; the Widgets menu carries the
+same listing per library and across all servers, for a home-screen row.
+
 **Main menu entries.** Everything below the library sections can be hidden in
 *Settings → Look and Feel*, and several entries only appear once you are signed
 in to myPlex.
@@ -130,7 +140,7 @@ PyPlexer.
 | --- | --- |
 | Server | Discovery, manual address, HTTPS, myPlex, master server, Wake On LAN |
 | Playback | Stream source, audio/subtitle selection, DVD, SMB overrides, intro skipping, lyrics, transcoding, better quality search |
-| Look and Feel | Menus shown, season flattening, episode sorting, server name prefixes, Recently Added counts, context menus, Fanart.tv thumbs |
+| Look and Feel | Menus shown, season flattening, episode sorting, server name prefixes, Recently Added and Random counts, context menus, Fanart.tv thumbs |
 | Kodi Library | Which sections are exported to the Kodi library |
 | Up Next | Up Next integration and its notification encoding |
 | Companion Receiver | The Plex Companion listener and Kodi's web server credentials |
